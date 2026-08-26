@@ -558,11 +558,8 @@ user = result.data;
 currentUser = user;
 currentUsername = user.username;
 
-const savedUserMonth =
-localStorage.getItem(`currentMonth_${currentUsername}`);
-
-if(savedUserMonth){
-currentMonth = savedUserMonth;
+if(user.last_month){
+currentMonth = user.last_month;
 }
 
 document.getElementById("currentUserLabel").innerText =
@@ -637,11 +634,8 @@ if(error || !user) return false;
 currentUser = user;
 currentUsername = user.username;
 
-const savedUserMonth =
-localStorage.getItem(`currentMonth_${currentUsername}`);
-
-if(savedUserMonth){
-currentMonth = savedUserMonth;
+if(user.last_month){
+currentMonth = user.last_month;
 }
 
 document.getElementById(
@@ -773,6 +767,13 @@ localStorage.setItem(
 `currentMonth_${currentUsername}`,
 currentMonth
 );
+}
+
+if(currentUser){
+await supabaseClient
+.from("money_users")
+.update({ last_month: currentMonth })
+.eq("id", currentUser.id);
 }
 
 document.getElementById("billTable").innerHTML = "";
