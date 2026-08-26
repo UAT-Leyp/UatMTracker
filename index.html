@@ -2329,7 +2329,7 @@ if(!currentUser) return;
 
 if(
 !confirm(
-"Delete all saved MoneyTracker data for this username?"
+`Delete all saved MoneyTracker data for ${currentMonth}?\n\nOnly ${currentMonth} will be cleared. Your other months will remain untouched.`
 )
 ) return;
 
@@ -2339,23 +2339,17 @@ const { error } =
 await supabaseClient
 .from("money_data")
 .delete()
-.eq("user_id", currentUser.id);
+.eq("user_id", currentUser.id)
+.eq("month", currentMonth);
 
 if(error){
 console.log(error);
-alert("Could not clear cloud data.");
+alert(`Could not clear ${currentMonth}.`);
 return;
 }
 
-Object.keys(localStorage)
-.filter(key =>
-key.startsWith(`billTrackerData_${currentUsername}_`)
-)
-.forEach(key =>
-localStorage.removeItem(key)
-);
-
-localStorage.removeItem("billTrackerData");
+// Remove only the currently selected month's local cache.
+localStorage.removeItem(userStorageKey());
 
 location.reload();
 
