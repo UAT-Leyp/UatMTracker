@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+/>
+
+<title>MoneyTracker</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#181420;
+color:white;
+padding:25px;
+}
+
+.container{
+background:#221b2f;
+border:2px solid #c084fc;
+border-radius:20px;
+padding:25px;
+box-shadow:0 0 25px rgba(192,132,252,0.25);
+}
+
+.top-section{
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+gap:20px;
+margin-bottom:30px;
+}
+
+.title{
+font-size:60px;
+font-weight:bold;
+color:#d8b4fe;
+outline:none;
+}
+
+.salary-box{
+background:#2b213d;
+border:1px solid #c084fc;
+border-radius:15px;
+padding:20px;
+min-width:350px;
+}
+
+.salary-row{
+display:flex;
+justify-content:space-between;
+margin-bottom:15px;
+}
+
+.salary-row input{
+width:180px;
+padding:10px;
+border:none;
+border-radius:10px;
+background:#1b1427;
+color:white;
+}
+
+.button-group{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-bottom:20px;
+}
+
+.add-btn{
+background:#a855f7;
+color:white;
+border:none;
+padding:12px 20px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.delete-btn{
+background:#ef4444;
+color:white;
+border:none;
+padding:10px 15px;
+border-radius:10px;
+cursor:pointer;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th{
+background:#312344;
+color:#f3e8ff;
+border:1px solid #4c3566;
+padding:15px;
+}
+
+td{
+border:1px solid #4c3566;
+padding:12px;
+}
+
+.table-input,
+.price-input{
+width:100%;
+background:transparent;
+border:none;
+color:white;
+outline:none;
+}
+
+.status-select{
+width:100%;
+padding:10px;
+border:none;
+border-radius:10px;
+color:white;
+font-weight:bold;
+}
+
+.paid{
+background:#22c55e;
+}
+
+.unpaid{
+background:#ef4444;
+}
+
+.summary{
+margin-top:30px;
+margin-left:auto;
+width:400px;
+background:#2b213d;
+border:1px solid #c084fc;
+border-radius:15px;
+padding:20px;
+}
+
+.summary-row{
+display:flex;
+justify-content:space-between;
+margin-bottom:20px;
+font-size:24px;
+font-weight:bold;
+}
+
+.breakdown-box{
+margin-top:30px;
+background:#2b213d;
+border:1px solid #c084fc;
+border-radius:18px;
+padding:20px;
+}
+
+.breakdown-title{
+font-size:28px;
+margin-bottom:20px;
+}
+
+.breakdown-price,
+.breakdown-name,
+.breakdownMainTotal{
+width:100%;
+padding:10px;
+border:none;
+border-radius:10px;
+background:#1b1427;
+color:white;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="loginScreen"
+style="
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#181420;
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:9999;
+">
+<div
+style="
+background:#221b2f;
+padding:40px;
+border-radius:20px;
+width:320px;
+text-align:center;
+border:2px solid #c084fc;
+">
+<h1
+style="
+margin-bottom:20px;
+color:#d8b4fe;
+">
+MONEY TRACKER
+</h1>
+
+<input
+type="text"
+id="usernameInput"
+autocomplete="username"
+placeholder="Enter Username"
+maxlength="50"
+style="
+width:100%;
+padding:15px;
+border:none;
+border-radius:10px;
+margin-bottom:20px;
+background:#1b1427;
+color:white;
+"
+>
+
+<input
+type="hidden"
+id="loginFormReady"
+>
+<button
+onclick="loginWithUsername()"
+style="
+width:100%;
+padding:15px;
+border:none;
+border-radius:10px;
+background:#a855f7;
+color:white;
+font-weight:bold;
+cursor:pointer;
+"
+>
+CONTINUE
+</button>
+
+<div id="loginMessage"
+style="
+margin-top:15px;
+font-size:14px;
+color:#fca5a5;
+min-height:18px;
+">
+</div>
+
+</div>
+</div>
+
+<div class="container">
+
+<div class="top-section">
+<div
+style="
+position:absolute;
+right:35px;
+top:25px;
+display:flex;
+gap:10px;
+align-items:center;
+font-size:14px;
+"
+>
+<span id="currentUserLabel"></span>
+<button
+class="add-btn"
+onclick="logout()"
+style="padding:8px 12px;"
+>
+LOG OUT
+</button>
+</div>
+
+<div>
+
+<div
+class="title"
+contenteditable="true"
+onkeyup="saveData()"
+>
+BILLS
+</div>
+
+<div
+style="
+display:flex;
+gap:10px;
+align-items:center;
+margin-top:15px;
+flex-wrap:wrap;
+"
+>
+
+<button
+class="add-btn"
+onclick="previousMonth()"
+>
+◀ PREV
+</button>
+
+<select
+id="monthSelect"
+onchange="switchMonth()"
+class="add-btn"
+style="
+width:220px;
+"
+></select>
+
+<button
+class="add-btn"
+onclick="nextMonth()"
+>
+NEXT ▶
+</button>
+
+</div>
+
+</div>
+
+<div class="salary-box">
+
+<div class="salary-row">
+
+<label>SALARY</label>
+
+<input
+type="number"
+id="salary"
+oninput="
+calculateTotals();
+saveData();
+"
+>
+
+</div>
+
+<div class="salary-row">
+
+<label>LEFTOVER</label>
+
+<input
+type="number"
+id="leftover"
+oninput="
+calculateTotals();
+saveData();
+"
+>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="button-group">
+<button
+class="add-btn"
+onclick="resetStatuses()"
+>
+RESET STATUS
+</button>
+<button
+class="add-btn"
+onclick="addRow()"
+>
++ ADD BILL
+</button>
+
+<button
+class="add-btn"
+onclick="addBreakdownBox()"
+>
++ ADD BREAKDOWN
+</button>
+
+<button
+class="add-btn"
+onclick="importPreviousMonth()"
+>
+IMPORT FROM
+</button>
+
+<button
+class="add-btn"
+onclick="manualSave()"
+>
+SAVE DATA
+</button>
+
+<button
+class="delete-btn"
+onclick="clearAllData()"
+>
+CLEAR ALL
+</button>
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>BILL NAME</th>
+<th>PRICE</th>
+<th>STATUS</th>
+<th>DUE DATE</th>
+<th>DELETE</th>
+
+</tr>
+
+</thead>
+
+<tbody id="billTable"></tbody>
+
+</table>
+
+<div class="summary">
+
+<div class="summary-row">
+<span>TOTAL MONEY:</span>
+<span id="totalMoney">0</span>
+</div>
+
+<div class="summary-row">
+<span>TOTAL BILL:</span>
+<span id="totalBill">0</span>
+</div>
+
+<div class="summary-row">
+<span>MONEY LEFT:</span>
+<span id="moneyLeft">0</span>
+</div>
+
+</div>
+
+<div id="allBreakdowns"></div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL =
+"https://fvzrphhacxchvicekluj.supabase.co";
+
+const SUPABASE_ANON_KEY =
+"sb_publishable_6i0q8k_jhf2yPKgqB1yNrA_cq4ER4Wt";
+
+const supabaseClient =
+window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_ANON_KEY
+);
+
+let currentMonth =
+localStorage.getItem("currentMonth")
+|| "August-2026";
+
+let isLoading = false;
+let currentUser = null;
+let currentUsername = "";
+
+function userStorageKey(){
+return `billTrackerData_${currentUsername}_${currentMonth}`;
+}
+
+function setLoginMessage(message){
+const el = document.getElementById("loginMessage");
+if(el) el.innerText = message || "";
+}
+
+async function loginWithUsername(){
+
+const input =
+document.getElementById("usernameInput");
+
+const username =
+input.value.trim();
+
+if(!username){
+setLoginMessage("Please enter a username.");
+return;
+}
+
+const normalizedUsername =
+username.toLowerCase().replace(/\\s+/g," ");
+
+setLoginMessage("Loading...");
+
+try{
+
+let { data: user, error } =
+await supabaseClient
+.from("money_users")
+.select("*")
+.eq("username", normalizedUsername)
+.maybeSingle();
+
+if(error){
+console.log(error);
+setLoginMessage(
+"Database is not ready. Please run the MoneyTracker SQL setup first."
+);
+return;
+}
+
+if(!user){
+
+const result =
+await supabaseClient
+.from("money_users")
+.insert([{
+username: normalizedUsername,
+display_name: username
+}])
+.select()
+.single();
+
+if(result.error){
+console.log(result.error);
+setLoginMessage(
+"Could not create this username."
+);
+return;
+}
+
+user = result.data;
+}
+
+currentUser = user;
+currentUsername = user.username;
+
+document.getElementById("currentUserLabel").innerText =
+`User: ${user.display_name || user.username}`;
+
+sessionStorage.setItem(
+"moneyTrackerUserId",
+user.id
+);
+
+sessionStorage.setItem(
+"moneyTrackerUsername",
+user.username
+);
+
+document.getElementById(
+"loginScreen"
+).style.display = "none";
+
+generateYearMonths();
+await loadData();
+calculateTotals();
+calculateAllBreakdowns();
+
+if(document.getElementById("billTable").children.length === 0){
+addRow();
+}
+
+}catch(error){
+
+console.log(error);
+setLoginMessage("Login failed. Please try again.");
+
+}
+
+}
+
+function logout(){
+
+sessionStorage.removeItem("moneyTrackerUserId");
+sessionStorage.removeItem("moneyTrackerUsername");
+
+currentUser = null;
+currentUsername = "";
+
+document.getElementById("loginScreen").style.display = "flex";
+document.getElementById("usernameInput").value = "";
+setLoginMessage("");
+
+}
+
+async function checkLoginState(){
+
+const userId =
+sessionStorage.getItem("moneyTrackerUserId");
+
+const username =
+sessionStorage.getItem("moneyTrackerUsername");
+
+if(!userId || !username) return false;
+
+const { data: user, error } =
+await supabaseClient
+.from("money_users")
+.select("*")
+.eq("id", userId)
+.eq("username", username)
+.maybeSingle();
+
+if(error || !user) return false;
+
+currentUser = user;
+currentUsername = user.username;
+
+document.getElementById(
+"loginScreen"
+).style.display = "none";
+
+return true;
+}
+
+function generateYearMonths(){
+
+const select =
+document.getElementById(
+"monthSelect"
+);
+
+select.innerHTML = "";
+
+const months = [
+
+"January",
+"February",
+"March",
+"April",
+"May",
+"June",
+"July",
+"August",
+"September",
+"October",
+"November",
+"December"
+
+];
+
+const startYear = 2026;
+const endYear = 2035;
+
+for(
+let year = startYear;
+year <= endYear;
+year++
+){
+
+months.forEach(month => {
+
+if(year === 2026 &&
+(month === "January" ||
+month === "February" ||
+month === "March")) return;
+
+const value =
+`${month}-${year}`;
+
+const option =
+document.createElement(
+"option"
+);
+
+option.value = value;
+
+option.textContent = value;
+
+if(value === currentMonth){
+
+option.selected = true;
+
+}
+
+select.appendChild(option);
+
+});
+
+}
+
+}
+function previousMonth(){
+
+const select =
+document.getElementById(
+"monthSelect"
+);
+
+if(select.selectedIndex > 0){
+
+select.selectedIndex--;
+
+switchMonth();
+
+}
+
+}
+
+function nextMonth(){
+
+const select =
+document.getElementById(
+"monthSelect"
+);
+
+if(
+select.selectedIndex <
+select.options.length - 1
+){
+
+select.selectedIndex++;
+
+switchMonth();
+
+}
+
+}
+
+
+async function switchMonth(){
+
+currentMonth =
+document.getElementById(
+"monthSelect"
+).value;
+
+localStorage.setItem(
+"currentMonth",
+currentMonth
+);
+
+document.getElementById("billTable").innerHTML = "";
+document.getElementById("allBreakdowns").innerHTML = "";
+
+if(currentUser){
+
+await loadData();
+
+}
+
+calculateTotals();
+calculateAllBreakdowns();
+
+if(
+document.getElementById("billTable").children.length === 0
+){
+
+addRow();
+
+}
+
+}
+
+async function importPreviousMonth(){
+
+const month =
+prompt(
+"Enter month to import from.\nExample: April-2026"
+);
+
+if(!month) return;
+
+const cleanMonth =
+month.trim();
+
+if(cleanMonth === currentMonth){
+
+alert(
+"You cannot import the same month."
+);
+
+return;
+
+}
+
+try{
+
+const { data, error } =
+await supabaseClient
+.from("money_data")
+.select("*")
+.eq("user_id", currentUser.id)
+.eq("month", cleanMonth)
+.maybeSingle();
+
+if(error){
+
+console.log(error);
+
+alert(
+"Database error."
+);
+
+return;
+
+}
+
+if(!data){
+
+alert(
+`No data found for ${cleanMonth}`
+);
+
+return;
+
+}
+
+const originalData =
+JSON.parse(data.data);
+
+/* CREATE FULL COPY */
+
+const importedData =
+JSON.parse(
+JSON.stringify(originalData)
+);
+
+/* SAVE ONLY TO CURRENT MONTH */
+
+await supabaseClient
+.from("money_data")
+.upsert([
+{
+user_id: currentUser.id,
+month: currentMonth,
+data: JSON.stringify(importedData)
+}
+], { onConflict: "user_id,month" });
+
+/* LOAD INTO SCREEN */
+
+localStorage.setItem(
+"billTrackerData",
+JSON.stringify(importedData)
+);
+
+alert(
+`Imported ${cleanMonth} into ${currentMonth}`
+);
+
+location.reload();
+
+}catch(error){
+
+console.log(error);
+
+alert(
+"Import failed."
+);
+
+}
+
+}
+
+
+
+function updateStatus(select){
+
+if(select.value === "Paid"){
+
+select.classList.remove("unpaid");
+select.classList.add("paid");
+
+}else{
+
+select.classList.remove("paid");
+select.classList.add("unpaid");
+
+}
+
+saveData();
+
+}
+
+function resetStatuses(){
+
+if(
+!confirm(
+"Reset all statuses to Unpaid?"
+)
+) return;
+
+document.querySelectorAll(
+".status-select"
+).forEach(select => {
+
+select.value = "Unpaid";
+
+select.classList.remove(
+"paid"
+);
+
+select.classList.add(
+"unpaid"
+);
+
+});
+
+saveData();
+
+alert(
+"All statuses reset."
+);
+
+}
+
+function calculateTotals(){
+
+let totalBill = 0;
+
+document.querySelectorAll(".price-input")
+.forEach(input => {
+
+totalBill +=
+Number(input.value) || 0;
+
+});
+
+const salary =
+Number(
+document.getElementById("salary").value
+) || 0;
+
+const leftover =
+Number(
+document.getElementById("leftover").value
+) || 0;
+
+const totalMoney =
+salary + leftover;
+
+const moneyLeft =
+totalMoney - totalBill;
+
+document.getElementById(
+"totalBill"
+).innerText =
+totalBill.toLocaleString();
+
+document.getElementById(
+"totalMoney"
+).innerText =
+totalMoney.toLocaleString();
+
+document.getElementById(
+"moneyLeft"
+).innerText =
+moneyLeft.toLocaleString();
+
+}
+
+function calculateAllBreakdowns(){
+
+const boxes =
+document.querySelectorAll(
+".breakdown-box"
+);
+
+boxes.forEach(box => {
+
+let total = 0;
+
+box.querySelectorAll(
+".breakdown-price"
+).forEach(input => {
+
+total +=
+Number(input.value) || 0;
+
+});
+
+const mainTotal =
+Number(
+box.querySelector(
+".breakdownMainTotal"
+).value
+) || 0;
+
+box.querySelector(
+".breakdownTotal"
+).innerText =
+total.toLocaleString();
+
+box.querySelector(
+".actualBreakdownBill"
+).innerText =
+(
+mainTotal - total
+).toLocaleString();
+
+});
+
+}
+
+function addRow(){
+
+const row =
+document.createElement("tr");
+
+row.innerHTML = `
+<td>
+<input
+class="table-input"
+placeholder="Bill Name"
+oninput="saveData()"
+>
+</td>
+
+<td>
+<input
+class="price-input"
+type="number"
+placeholder="0"
+oninput="
+calculateTotals();
+saveData();
+"
+>
+</td>
+
+<td>
+
+<select
+class="status-select unpaid"
+onchange="updateStatus(this)"
+>
+
+<option value="Paid">
+Paid
+</option>
+
+<option
+value="Unpaid"
+selected
+>
+Unpaid
+</option>
+
+</select>
+
+</td>
+
+<td>
+<input
+class="table-input"
+placeholder="Due Date"
+oninput="saveData()"
+>
+</td>
+
+<td>
+
+<button
+class="delete-btn"
+onclick="deleteRow(this)"
+>
+DELETE
+</button>
+
+</td>
+`;
+
+document.getElementById(
+"billTable"
+).appendChild(row);
+
+saveData();
+
+}
+
+function deleteRow(button){
+
+button.closest("tr").remove();
+
+calculateTotals();
+
+saveData();
+
+}
+
+function addBreakdownBox(){
+
+const container =
+document.getElementById(
+"allBreakdowns"
+);
+
+const box =
+document.createElement("div");
+
+box.className =
+"breakdown-box";
+
+box.innerHTML = `
+<h2
+class="breakdown-title"
+contenteditable="true"
+onkeyup="saveData()"
+>
+NEW BREAKDOWN
+</h2>
+
+<input
+type="number"
+class="breakdownMainTotal"
+placeholder="Main Total"
+oninput="
+calculateAllBreakdowns();
+saveData();
+"
+>
+
+<table>
+
+<tbody class="breakdownTable"></tbody>
+
+</table>
+
+<div
+style="
+display:flex;
+gap:10px;
+margin-top:15px;
+"
+>
+
+<button
+class="add-btn"
+onclick="addBreakdownRow(this)"
+>
++ ADD ITEM
+</button>
+
+<button
+class="delete-btn"
+onclick="deleteBreakdownBox(this)"
+>
+DELETE BOX
+</button>
+
+</div>
+
+<div
+class="breakdown-summary"
+style="
+margin-top:20px;
+"
+>
+
+<div
+style="
+display:flex;
+justify-content:space-between;
+margin-bottom:10px;
+font-size:22px;
+font-weight:bold;
+"
+>
+<span>NEW TOTAL</span>
+<span class="breakdownTotal">0</span>
+</div>
+
+<div
+style="
+display:flex;
+justify-content:space-between;
+font-size:22px;
+font-weight:bold;
+color:#86efac;
+"
+>
+<span>ACTUAL BILL</span>
+<span class="actualBreakdownBill">0</span>
+</div>
+
+</div>
+`;
+
+container.appendChild(box);
+
+saveData();
+
+}
+
+function addBreakdownRow(button){
+
+const box =
+button.closest(".breakdown-box");
+
+const table =
+box.querySelector(".breakdownTable");
+
+const row =
+document.createElement("tr");
+
+row.innerHTML = `
+<td>
+
+<input
+class="breakdown-price"
+type="number"
+placeholder="0"
+oninput="
+calculateAllBreakdowns();
+saveData();
+"
+>
+
+</td>
+
+<td>
+
+<input
+class="breakdown-name"
+placeholder="Description"
+oninput="saveData()"
+>
+
+</td>
+
+<td>
+
+<button
+class="delete-btn"
+onclick="deleteBreakdownRow(this)"
+>
+DELETE
+</button>
+
+</td>
+`;
+
+table.appendChild(row);
+
+saveData();
+
+}
+
+function deleteBreakdownRow(button){
+
+button.closest("tr").remove();
+
+calculateAllBreakdowns();
+
+saveData();
+
+}
+
+function deleteBreakdownBox(button){
+
+button.closest(
+".breakdown-box"
+).remove();
+
+calculateAllBreakdowns();
+
+saveData();
+
+}
+
+async function saveData(){
+if(isLoading) return;
+const data = {
+
+title:
+document.querySelector(".title").innerText,
+
+salary:
+document.getElementById("salary").value,
+
+leftover:
+document.getElementById("leftover").value,
+
+bills: [],
+
+breakdowns: []
+
+};
+
+document.querySelectorAll(
+"#billTable tr"
+).forEach(row => {
+
+const inputs =
+row.querySelectorAll("input");
+
+const select =
+row.querySelector("select");
+
+data.bills.push({
+
+billName:
+inputs[0].value,
+
+price:
+inputs[1].value,
+
+dueDate:
+inputs[2].value,
+
+status:
+select.value
+
+});
+
+});
+
+document.querySelectorAll(
+".breakdown-box"
+).forEach(box => {
+
+const breakdown = {
+
+title:
+box.querySelector(
+".breakdown-title"
+).innerText,
+
+total:
+box.querySelector(
+".breakdownMainTotal"
+).value,
+
+items: []
+
+};
+
+box.querySelectorAll(
+".breakdownTable tr"
+).forEach(row => {
+
+const inputs =
+row.querySelectorAll("input");
+
+breakdown.items.push({
+
+price:
+inputs[0].value,
+
+description:
+inputs[1].value
+
+});
+
+});
+
+data.breakdowns.push(
+breakdown
+);
+
+});
+
+localStorage.setItem(
+"billTrackerData",
+JSON.stringify(data)
+);
+
+if(!currentUser) return;
+
+try{
+
+await supabaseClient
+.from("money_data")
+.upsert([
+{
+user_id: currentUser.id,
+month: currentMonth,
+data: JSON.stringify(data)
+}
+], { onConflict: "user_id,month" });
+
+}catch(error){
+
+console.log(error);
+
+}
+
+}
+
+async function loadData(){
+
+if(!currentUser) return;
+
+isLoading = true;
+
+let saved =
+localStorage.getItem(userStorageKey());
+
+try{
+
+const { data: cloudData, error } =
+await supabaseClient
+.from("money_data")
+.select("*")
+.eq("user_id", currentUser.id)
+.eq("month", currentMonth)
+.maybeSingle();
+
+if(error){
+console.log(error);
+}
+
+if(cloudData?.data){
+
+saved = cloudData.data;
+
+localStorage.setItem(
+userStorageKey(),
+saved
+);
+
+}
+
+}catch(error){
+
+console.log(error);
+
+}
+
+if(!saved){
+
+isLoading = false;
+return;
+
+}
+
+const data =
+typeof saved === "string"
+? JSON.parse(saved)
+: saved;
+
+document.querySelector(
+".title"
+).innerText =
+data.title || "BILLS";
+
+document.getElementById(
+"salary"
+).value =
+data.salary || "";
+
+document.getElementById(
+"leftover"
+).value =
+data.leftover || "";
+
+document.getElementById(
+"billTable"
+).innerHTML = "";
+
+(data.bills || []).forEach(bill => {
+
+addRow();
+
+const rows =
+document.querySelectorAll(
+"#billTable tr"
+);
+
+const lastRow =
+rows[rows.length - 1];
+
+const inputs =
+lastRow.querySelectorAll("input");
+
+inputs[0].value =
+bill.billName || "";
+
+inputs[1].value =
+bill.price || "";
+
+inputs[2].value =
+bill.dueDate || "";
+
+const select =
+lastRow.querySelector("select");
+
+select.value =
+bill.status || "Unpaid";
+
+updateStatus(select);
+
+});
+
+document.getElementById(
+"allBreakdowns"
+).innerHTML = "";
+
+(data.breakdowns || []).forEach(
+breakdown => {
+
+addBreakdownBox();
+
+const boxes =
+document.querySelectorAll(
+".breakdown-box"
+);
+
+const latestBox =
+boxes[boxes.length - 1];
+
+latestBox.querySelector(
+".breakdown-title"
+).innerText =
+breakdown.title || "NEW BREAKDOWN";
+
+latestBox.querySelector(
+".breakdownMainTotal"
+).value =
+breakdown.total || "";
+
+latestBox.querySelector(
+".breakdownTable"
+).innerHTML = "";
+
+(breakdown.items || []).forEach(
+item => {
+
+addBreakdownRow(
+latestBox.querySelector(".add-btn")
+);
+
+const rows =
+latestBox.querySelectorAll(
+".breakdownTable tr"
+);
+
+const lastRow =
+rows[rows.length - 1];
+
+const inputs =
+lastRow.querySelectorAll("input");
+
+inputs[0].value =
+item.price || "";
+
+inputs[1].value =
+item.description || "";
+
+});
+
+});
+
+calculateTotals();
+calculateAllBreakdowns();
+isLoading = false;
+
+}
+
+function manualSave(){
+
+saveData();
+
+alert(
+"Saved successfully."
+);
+
+}
+
+async function clearAllData(){
+
+if(!currentUser) return;
+
+if(
+!confirm(
+"Delete all saved MoneyTracker data for this username?"
+)
+) return;
+
+try{
+
+const { error } =
+await supabaseClient
+.from("money_data")
+.delete()
+.eq("user_id", currentUser.id);
+
+if(error){
+console.log(error);
+alert("Could not clear cloud data.");
+return;
+}
+
+Object.keys(localStorage)
+.filter(key =>
+key.startsWith(`billTrackerData_${currentUsername}_`)
+)
+.forEach(key =>
+localStorage.removeItem(key)
+);
+
+localStorage.removeItem("billTrackerData");
+
+location.reload();
+
+}catch(error){
+
+console.log(error);
+alert("Clear failed.");
+
+}
+
+}
+
+document.getElementById("usernameInput").addEventListener(
+"keydown",
+event => {
+if(event.key === "Enter"){
+loginWithUsername();
+}
+}
+);
+
+window.onload = async () => {
+
+const loggedIn =
+await checkLoginState();
+
+if(loggedIn){
+
+generateYearMonths();
+await loadData();
+calculateTotals();
+calculateAllBreakdowns();
+
+if(
+document.getElementById("billTable").children.length === 0
+){
+
+addRow();
+
+}
+
+}else{
+
+document.getElementById(
+"loginScreen"
+).style.display = "flex";
+
+}
+
+};
+</script>
+
+</body>
+</html>
