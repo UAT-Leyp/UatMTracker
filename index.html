@@ -286,6 +286,15 @@ align-items:center;
 font-size:14px;
 "
 >
+<span id="saveStatus"
+style="
+font-size:13px;
+opacity:.9;
+min-width:75px;
+text-align:right;
+">
+</span>
+
 <span id="currentUserLabel"></span>
 <button
 class="add-btn"
@@ -1305,8 +1314,37 @@ saveData();
 
 }
 
+function setSaveStatus(text){
+const el = document.getElementById("saveStatus");
+if(el) el.innerText = text || "";
+}
+
+let saveStatusTimer = null;
+
+function showSaving(){
+clearTimeout(saveStatusTimer);
+setSaveStatus("Saving...");
+}
+
+function showSaved(){
+clearTimeout(saveStatusTimer);
+setSaveStatus("✓ Saved");
+saveStatusTimer = setTimeout(() => {
+setSaveStatus("");
+}, 2500);
+}
+
+function showSaveError(){
+clearTimeout(saveStatusTimer);
+setSaveStatus("⚠ Save failed");
+}
+
 async function saveData(){
 if(isLoading) return;
+if(!currentUser) return;
+
+showSaving();
+
 const data = {
 
 title:
@@ -1402,10 +1440,9 @@ localStorage.setItem(
 JSON.stringify(data)
 );
 
-if(!currentUser) return;
-
 try{
 
+const { error } =
 await supabaseClient
 .from("money_data")
 .upsert([
@@ -1416,9 +1453,18 @@ data: JSON.stringify(data)
 }
 ], { onConflict: "user_id,month" });
 
+if(error){
+console.log(error);
+showSaveError();
+return;
+}
+
+showSaved();
+
 }catch(error){
 
 console.log(error);
+showSaveError();
 
 }
 
@@ -1594,13 +1640,9 @@ isLoading = false;
 
 }
 
-function manualSave(){
+async function manualSave(){
 
-saveData();
-
-alert(
-"Saved successfully."
-);
+await saveData();
 
 }
 
