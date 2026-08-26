@@ -413,7 +413,7 @@ onclick="addBreakdownBox()"
 class="add-btn"
 onclick="importPreviousMonth()"
 >
-IMPORT MONTH
+IMPORT FROM
 </button>
 
 <button
@@ -1050,102 +1050,516 @@ return String(value)
 .replace(/'/g, "&#039;");
 }
 
+function closeImportModal(){
+const modal = document.getElementById("importModal");
+if(modal) modal.remove();
+}
+
+function getAvailableImportMonths(){
+const select = document.getElementById("monthSelect");
+if(!select) return [];
+return Array.from(select.options)
+.filter(option => option.value !== currentMonth)
+.map(option => option.value);
+}
+
 async function importPreviousMonth(){
 
-const month =
-prompt(
-"Enter month to import from.\nExample: April-2026"
-);
+if(!currentUser) return;
 
-if(!month) return;
+const months = getAvailableImportMonths();
 
-const cleanMonth =
-month.trim();
+const overlay = document.createElement("div");
+overlay.id = "importModal";
+overlay.style.cssText = `
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.75);
+z-index:9999;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:20px;
+overflow:auto;
+`;
 
-if(cleanMonth === currentMonth){
+overlay.innerHTML = `
+<div style="
+background:#17122a;
+border:1px solid rgba(255,255,255,.15);
+border-radius:18px;
+width:min(720px,100%);
+max-height:90vh;
+overflow:auto;
+padding:24px;
+box-shadow:0 20px 60px rgba(0,0,0,.45);
+color:white;
+">
 
-alert(
-"You cannot import the same month."
-);
+<h2 style="margin-top:0;">IMPORT FROM</h2>
 
+<div id="importStep1">
+
+<p style="opacity:.85;">
+Select the month you want to copy from.
+</p>
+
+<select id="importSourceMonth" style="
+width:100%;
+padding:12px;
+border-radius:10px;
+font-size:16px;
+margin-bottom:20px;
+">
+${months.map(month =>
+`<option value="${escapeHtml(month)}">${escapeHtml(month)}</option>`
+).join("")}
+</select>
+
+<div style="display:flex;gap:10px;justify-content:flex-end;">
+<button class="delete-btn" onclick="closeImportModal()">CANCEL</button>
+<button class="add-btn" onclick="loadImportChoices()">NEXT</button>
+</div>
+
+</div>
+
+<div id="importStep2" style="display:none;"></div>
+
+</div>
+`;
+
+document.body.appendChild(overlay);
+}
+
+async function loadImportChoices(){
+
+const sourceMonth =
+document.getElementById("importSourceMonth").value;
+
+const sourceData =
+await getMonthData(sourceMonth);
+
+if(!sourceData){
 return;
+}
 
+const bills = Array.isArray(sourceData.bills)
+? sourceData.bills
+: [];
+
+const breakdowns = Array.isArray(sourceData.breakdowns)
+? sourceData.breakdowns
+: [];
+
+const step = document.getElementById("importStep2");
+
+step.innerHTML = `
+<h3 style="margin-top:0;">
+Import from ${escapeHtml(sourceMonth)}
+</h3>
+
+<div style="
+border:1px solid rgba(255,255,255,.12);
+border-radius:12px;
+padding:16px;
+margin-bottom:16px;
+">
+
+<h3>🧾 BILLS</h3>
+
+<div style="display:grid;gap:8px;">
+${
+bills.length
+? bills.map((bill,index) => `
+<label style="
+display:flex;
+gap:10px;
+align-items:center;
+padding:9px;
+border-radius:8px;
+background:rgba(255,255,255,.04);
+">
+<input
+type="checkbox"
+class="import-bill"
+value="${index}"
+checked
+>
+<span>${escapeHtml(bill.billName || "Unnamed Bill")}</span>
+</label>
+`).join("")
+: `<div style="opacity:.7;">No bills found.</div>`
+}
+</div>
+
+<div style="
+margin-top:14px;
+padding-top:14px;
+border-top:1px solid rgba(255,255,255,.1);
+">
+
+<strong>Bill fields to copy</strong>
+
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px;">
+
+<label><input type="checkbox" class="import-bill-field" value="billName" checked> BILL NAME</label>
+<label><input type="checkbox" class="import-bill-field" value="price" checked> PRICE</label>
+<label><input type="checkbox" class="import-bill-field" value="status"> STATUS</label>
+<label><input type="checkbox" class="import-bill-field" value="dueDate" checked> DUE DATE</label>
+
+</div>
+</div>
+</div>
+
+<div style="
+border:1px solid rgba(255,255,255,.12);
+border-radius:12px;
+padding:16px;
+margin-bottom:16px;
+">
+
+<h3>📦 BREAKDOWNS</h3>
+
+<div style="display:grid;gap:8px;">
+${
+breakdowns.length
+? breakdowns.map((breakdown,index) => `
+<label style="
+display:flex;
+gap:10px;
+align-items:center;
+padding:9px;
+border-radius:8px;
+background:rgba(255,255,255,.04);
+">
+<input
+type="checkbox"
+class="import-breakdown"
+value="${index}"
+checked
+>
+<span>${escapeHtml(breakdown.title || "Unnamed Breakdown")}</span>
+</label>
+`).join("")
+: `<div style="opacity:.7;">No breakdowns found.</div>`
+}
+</div>
+
+<div style="
+margin-top:14px;
+padding-top:14px;
+border-top:1px solid rgba(255,255,255,.1);
+">
+
+<strong>Breakdown fields to copy</strong>
+
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px;">
+
+<label><input type="checkbox" class="import-breakdown-field" value="title" checked> BREAKDOWN TITLE</label>
+<label><input type="checkbox" class="import-breakdown-field" value="total" checked> MAIN TOTAL</label>
+<label><input type="checkbox" class="import-breakdown-field" value="itemPrice" checked> ITEM PRICE</label>
+<label><input type="checkbox" class="import-breakdown-field" value="description" checked> DESCRIPTION</label>
+
+</div>
+</div>
+</div>
+
+<div style="
+font-size:13px;
+opacity:.75;
+margin-bottom:16px;
+">
+If a bill or breakdown with the same name already exists in the current month,
+the selected fields are updated. Unselected fields are left unchanged.
+New items are created when no matching item exists.
+</div>
+
+<div style="display:flex;gap:10px;justify-content:flex-end;">
+<button class="delete-btn" onclick="closeImportModal()">CANCEL</button>
+<button class="add-btn" onclick="performSelectiveImport()">IMPORT SELECTED</button>
+</div>
+`;
+
+document.getElementById("importStep1").style.display = "none";
+step.style.display = "block";
+}
+
+async function performSelectiveImport(){
+
+const sourceMonth =
+document.getElementById("importSourceMonth").value;
+
+const sourceData =
+await getMonthData(sourceMonth);
+
+if(!sourceData) return;
+
+const billIndexes =
+Array.from(document.querySelectorAll(".import-bill:checked"))
+.map(input => Number(input.value));
+
+const billFields =
+Array.from(document.querySelectorAll(".import-bill-field:checked"))
+.map(input => input.value);
+
+const breakdownIndexes =
+Array.from(document.querySelectorAll(".import-breakdown:checked"))
+.map(input => Number(input.value));
+
+const breakdownFields =
+Array.from(document.querySelectorAll(".import-breakdown-field:checked"))
+.map(input => input.value);
+
+if(
+billIndexes.length === 0 &&
+breakdownIndexes.length === 0
+){
+alert("Select at least one bill or breakdown.");
+return;
+}
+
+if(
+billIndexes.length > 0 &&
+billFields.length === 0
+){
+alert("Select at least one bill field.");
+return;
+}
+
+if(
+breakdownIndexes.length > 0 &&
+breakdownFields.length === 0
+){
+alert("Select at least one breakdown field.");
+return;
 }
 
 try{
 
-const { data, error } =
+isLoading = true;
+
+const { data: existingRow, error } =
 await supabaseClient
 .from("money_data")
-.select("*")
+.select("data")
 .eq("user_id", currentUser.id)
-.eq("month", cleanMonth)
+.eq("month", currentMonth)
 .maybeSingle();
 
 if(error){
-
 console.log(error);
+alert("Database error while loading the current month.");
+return;
+}
 
-alert(
-"Database error."
+let currentData = existingRow
+? (typeof existingRow.data === "string"
+? JSON.parse(existingRow.data)
+: existingRow.data)
+: {
+title: currentMonth,
+salary: "",
+leftover: "",
+bills: [],
+breakdowns: []
+};
+
+currentData.bills =
+Array.isArray(currentData.bills)
+? currentData.bills
+: [];
+
+currentData.breakdowns =
+Array.isArray(currentData.breakdowns)
+? currentData.breakdowns
+: [];
+
+const sourceBills =
+Array.isArray(sourceData.bills)
+? sourceData.bills
+: [];
+
+const sourceBreakdowns =
+Array.isArray(sourceData.breakdowns)
+? sourceData.breakdowns
+: [];
+
+/* BILLS */
+billIndexes.forEach(index => {
+
+const sourceBill = sourceBills[index];
+if(!sourceBill) return;
+
+const sourceName =
+String(sourceBill.billName || "").trim();
+
+let targetBill =
+currentData.bills.find(bill =>
+String(bill.billName || "").trim().toLowerCase()
+=== sourceName.toLowerCase()
 );
 
-return;
+if(!targetBill){
+
+targetBill = {
+billName: sourceBill.billName || "",
+price: "",
+status: "Unpaid",
+dueDate: ""
+};
+
+currentData.bills.push(targetBill);
 
 }
 
-if(!data){
+if(billFields.includes("billName"))
+targetBill.billName = sourceBill.billName || "";
 
-alert(
-`No data found for ${cleanMonth}`
+if(billFields.includes("price"))
+targetBill.price = sourceBill.price || "";
+
+if(billFields.includes("status"))
+targetBill.status = sourceBill.status || "Unpaid";
+
+if(billFields.includes("dueDate"))
+targetBill.dueDate = sourceBill.dueDate || "";
+
+});
+
+/* BREAKDOWNS */
+breakdownIndexes.forEach(index => {
+
+const sourceBreakdown = sourceBreakdowns[index];
+if(!sourceBreakdown) return;
+
+const sourceTitle =
+String(sourceBreakdown.title || "").trim();
+
+let targetBreakdown =
+currentData.breakdowns.find(breakdown =>
+String(breakdown.title || "").trim().toLowerCase()
+=== sourceTitle.toLowerCase()
 );
 
-return;
+if(!targetBreakdown){
+
+targetBreakdown = {
+title: sourceBreakdown.title || "NEW BREAKDOWN",
+total: "",
+items: []
+};
+
+currentData.breakdowns.push(targetBreakdown);
 
 }
 
-const originalData =
-JSON.parse(data.data);
+if(breakdownFields.includes("title"))
+targetBreakdown.title =
+sourceBreakdown.title || "NEW BREAKDOWN";
 
-/* CREATE FULL COPY */
+if(breakdownFields.includes("total"))
+targetBreakdown.total =
+sourceBreakdown.total || "";
 
-const importedData =
-JSON.parse(
-JSON.stringify(originalData)
+/*
+For breakdown items, match by description when possible.
+If no match exists, create a new item.
+This allows importing only price or only description without
+destroying existing items.
+*/
+const sourceItems =
+Array.isArray(sourceBreakdown.items)
+? sourceBreakdown.items
+: [];
+
+targetBreakdown.items =
+Array.isArray(targetBreakdown.items)
+? targetBreakdown.items
+: [];
+
+sourceItems.forEach((sourceItem, itemIndex) => {
+
+const sourceDescription =
+String(sourceItem.description || "").trim();
+
+let targetItem =
+targetBreakdown.items.find(item =>
+sourceDescription &&
+String(item.description || "").trim().toLowerCase()
+=== sourceDescription.toLowerCase()
 );
 
-/* SAVE ONLY TO CURRENT MONTH */
+if(!targetItem){
+targetItem =
+targetBreakdown.items[itemIndex];
+}
 
+if(!targetItem){
+
+targetItem = {
+price: "",
+description: ""
+};
+
+targetBreakdown.items.push(targetItem);
+
+}
+
+if(breakdownFields.includes("itemPrice"))
+targetItem.price = sourceItem.price || "";
+
+if(breakdownFields.includes("description"))
+targetItem.description =
+sourceItem.description || "";
+
+});
+
+});
+
+/* Save the merged current month without changing salary/leftover/title. */
+const { error: saveError } =
 await supabaseClient
 .from("money_data")
 .upsert([
 {
 user_id: currentUser.id,
 month: currentMonth,
-data: JSON.stringify(importedData)
+data: currentData
 }
-], { onConflict: "user_id,month" });
+],
+{ onConflict: "user_id,month" });
 
-/* LOAD INTO SCREEN */
+if(saveError){
+console.log(saveError);
+alert("Import could not be saved.");
+return;
+}
 
 localStorage.setItem(
-"billTrackerData",
-JSON.stringify(importedData)
+userStorageKey(),
+JSON.stringify(currentData)
 );
 
-alert(
-`Imported ${cleanMonth} into ${currentMonth}`
-);
+closeImportModal();
 
-location.reload();
+await loadData();
+calculateTotals();
+calculateAllBreakdowns();
+
+if(document.getElementById("billTable").children.length === 0){
+addRow();
+}
+
+alert(`Selected information imported from ${sourceMonth}.`);
 
 }catch(error){
 
 console.log(error);
+alert("Import failed.");
 
-alert(
-"Import failed."
-);
+}finally{
+
+isLoading = false;
 
 }
 
