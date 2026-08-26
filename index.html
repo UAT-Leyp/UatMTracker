@@ -482,7 +482,7 @@ SUPABASE_ANON_KEY
 
 let currentMonth =
 localStorage.getItem("currentMonth")
-|| "August-2026";
+|| "April-2026";
 
 let isLoading = false;
 let currentUser = null;
@@ -558,6 +558,13 @@ user = result.data;
 currentUser = user;
 currentUsername = user.username;
 
+const savedUserMonth =
+localStorage.getItem(`currentMonth_${currentUsername}`);
+
+if(savedUserMonth){
+currentMonth = savedUserMonth;
+}
+
 document.getElementById("currentUserLabel").innerText =
 `User: ${user.display_name || user.username}`;
 
@@ -629,6 +636,13 @@ if(error || !user) return false;
 
 currentUser = user;
 currentUsername = user.username;
+
+const savedUserMonth =
+localStorage.getItem(`currentMonth_${currentUsername}`);
+
+if(savedUserMonth){
+currentMonth = savedUserMonth;
+}
 
 document.getElementById(
 "loginScreen"
@@ -753,6 +767,13 @@ localStorage.setItem(
 "currentMonth",
 currentMonth
 );
+
+if(currentUsername){
+localStorage.setItem(
+`currentMonth_${currentUsername}`,
+currentMonth
+);
+}
 
 document.getElementById("billTable").innerHTML = "";
 document.getElementById("allBreakdowns").innerHTML = "";
