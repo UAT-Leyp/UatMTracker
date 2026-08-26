@@ -413,7 +413,7 @@ onclick="addBreakdownBox()"
 class="add-btn"
 onclick="importPreviousMonth()"
 >
-IMPORT FROM
+IMPORT MONTH
 </button>
 
 <button
@@ -442,6 +442,7 @@ CLEAR ALL
 <th>PRICE</th>
 <th>STATUS</th>
 <th>DUE DATE</th>
+<th>COPY</th>
 <th>DELETE</th>
 
 </tr>
@@ -807,6 +808,248 @@ addRow();
 
 }
 
+async function getMonthData(month){
+
+const { data, error } =
+await supabaseClient
+.from("money_data")
+.select("data")
+.eq("user_id", currentUser.id)
+.eq("month", month)
+.maybeSingle();
+
+if(error){
+console.log(error);
+alert("Database error while loading " + month + ".");
+return null;
+}
+
+if(!data){
+alert(`No saved data found for ${month}.`);
+return null;
+}
+
+return typeof data.data === "string"
+? JSON.parse(data.data)
+: data.data;
+}
+
+async function copyBill(button){
+
+if(!currentUser) return;
+
+const row = button.closest("tr");
+const inputs = row.querySelectorAll("input");
+const billName = inputs[0]?.value?.trim() || "";
+
+if(!billName){
+alert("Give this bill a name first, then copy it.");
+return;
+}
+
+const sourceMonth = prompt(
+`Copy "${billName}" from which month?\\nExample: July-2026`
+);
+
+if(!sourceMonth) return;
+
+const cleanMonth = sourceMonth.trim();
+
+if(cleanMonth === currentMonth){
+alert("You cannot copy from the current month.");
+return;
+}
+
+const sourceData = await getMonthData(cleanMonth);
+if(!sourceData) return;
+
+const sourceBill = (sourceData.bills || []).find(bill =>
+String(bill.billName || "").trim().toLowerCase() === billName.toLowerCase()
+);
+
+if(!sourceBill){
+alert(`No bill named "${billName}" was found in ${cleanMonth}.`);
+return;
+}
+
+inputs[0].value = sourceBill.billName || "";
+inputs[1].value = sourceBill.price || "";
+inputs[2].value = sourceBill.dueDate || "";
+
+const select = row.querySelector("select");
+select.value = "Unpaid";
+updateStatusVisualOnly(select);
+
+calculateTotals();
+await saveData();
+
+}
+
+function updateStatusVisualOnly(select){
+
+if(select.value === "Paid"){
+select.classList.remove("unpaid");
+select.classList.add("paid");
+}else{
+select.classList.remove("paid");
+select.classList.add("unpaid");
+}
+
+}
+
+async function copyBreakdown(button){
+
+if(!currentUser) return;
+
+const box = button.closest(".breakdown-box");
+const title =
+box.querySelector(".breakdown-title")?.innerText?.trim()
+|| "NEW BREAKDOWN";
+
+const sourceMonth = prompt(
+`Copy "${title}" from which month?\\nExample: July-2026`
+);
+
+if(!sourceMonth) return;
+
+const cleanMonth = sourceMonth.trim();
+
+if(cleanMonth === currentMonth){
+alert("You cannot copy from the current month.");
+return;
+}
+
+const sourceData = await getMonthData(cleanMonth);
+if(!sourceData) return;
+
+const sourceBreakdown = (sourceData.breakdowns || []).find(breakdown =>
+String(breakdown.title || "").trim().toLowerCase() === title.toLowerCase()
+);
+
+if(!sourceBreakdown){
+alert(`No breakdown named "${title}" was found in ${cleanMonth}.`);
+return;
+}
+
+const container = document.getElementById("allBreakdowns");
+const newBox = document.createElement("div");
+newBox.className = "breakdown-box";
+
+newBox.innerHTML = `
+<h2
+class="breakdown-title"
+contenteditable="true"
+onkeyup="saveData()"
+>${escapeHtml(sourceBreakdown.title || "NEW BREAKDOWN")}</h2>
+
+<input
+type="number"
+class="breakdownMainTotal"
+placeholder="Main Total"
+oninput="
+calculateAllBreakdowns();
+saveData();
+"
+>
+
+<table>
+<tbody class="breakdownTable"></tbody>
+</table>
+
+<div
+style="
+display:flex;
+gap:10px;
+margin-top:15px;
+"
+>
+
+<button
+class="add-btn"
+onclick="addBreakdownRow(this)"
+>
++ ADD ITEM
+</button>
+
+<button
+class="add-btn"
+onclick="copyBreakdown(this)"
+title="Copy this breakdown from another month"
+>
+📋 COPY
+</button>
+
+<button
+class="delete-btn"
+onclick="deleteBreakdownBox(this)"
+>
+DELETE BOX
+</button>
+
+</div>
+
+<div
+class="breakdown-summary"
+style="margin-top:20px;"
+>
+
+<div
+style="
+display:flex;
+justify-content:space-between;
+margin-bottom:10px;
+font-size:22px;
+font-weight:bold;
+"
+>
+<span>NEW TOTAL</span>
+<span class="breakdownTotal">0</span>
+</div>
+
+<div
+style="
+display:flex;
+justify-content:space-between;
+font-size:22px;
+font-weight:bold;
+color:#86efac;
+"
+>
+<span>ACTUAL BILL</span>
+<span class="actualBreakdownBill">0</span>
+</div>
+
+</div>
+`;
+
+container.appendChild(newBox);
+
+newBox.querySelector(".breakdownMainTotal").value =
+sourceBreakdown.total || "";
+
+(sourceBreakdown.items || []).forEach(item => {
+addBreakdownRow(newBox.querySelector(".add-btn"));
+const rows = newBox.querySelectorAll(".breakdownTable tr");
+const lastRow = rows[rows.length - 1];
+const inputs = lastRow.querySelectorAll("input");
+inputs[0].value = item.price || "";
+inputs[1].value = item.description || "";
+});
+
+calculateAllBreakdowns();
+await saveData();
+
+}
+
+function escapeHtml(value){
+return String(value)
+.replace(/&/g, "&amp;")
+.replace(/</g, "&lt;")
+.replace(/>/g, "&gt;")
+.replace(/"/g, "&quot;")
+.replace(/'/g, "&#039;");
+}
+
 async function importPreviousMonth(){
 
 const month =
@@ -1107,6 +1350,18 @@ oninput="saveData()"
 <td>
 
 <button
+class="add-btn"
+onclick="copyBill(this)"
+title="Copy this bill from another month"
+>
+📋
+</button>
+
+</td>
+
+<td>
+
+<button
 class="delete-btn"
 onclick="deleteRow(this)"
 >
@@ -1185,6 +1440,14 @@ class="add-btn"
 onclick="addBreakdownRow(this)"
 >
 + ADD ITEM
+</button>
+
+<button
+class="add-btn"
+onclick="copyBreakdown(this)"
+title="Copy this breakdown from another month"
+>
+📋 COPY
 </button>
 
 <button
