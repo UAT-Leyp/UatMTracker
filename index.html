@@ -211,7 +211,9 @@ margin:12px 0 7px;
 }
 
 .loan-amount,
-.loan-bank{
+.loan-bank,
+.loan-custom-input,
+.loan-custom-select{
 width:100%;
 padding:12px;
 border:1px solid #4c3566;
@@ -220,6 +222,37 @@ background:#1b1427;
 color:white;
 outline:none;
 font-size:16px;
+}
+
+.loan-custom-panel{
+display:none;
+margin-top:16px;
+padding:16px;
+border:1px solid #5b4277;
+border-radius:14px;
+background:#21172f;
+}
+
+.loan-custom-panel.show{
+display:block;
+}
+
+.loan-custom-grid{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:12px;
+}
+
+.loan-custom-grid .full{
+grid-column:1 / -1;
+}
+
+.loan-custom-help{
+font-size:12px;
+line-height:1.45;
+color:#c4b5fd;
+opacity:.85;
+margin-top:8px;
 }
 
 .loan-bank-name{
@@ -272,6 +305,8 @@ body{padding:12px;}
 .loan-results-table{font-size:13px;}
 .loan-results-table th,
 .loan-results-table td{padding:9px 6px;}
+.loan-custom-grid{grid-template-columns:1fr;}
+.loan-custom-grid .full{grid-column:auto;}
 }
 
 </style>
@@ -575,7 +610,7 @@ CLEAR ALL
 
 <script>
 
-// MoneyTracker build: Leif-only loan calculator (RCBC UnliPay / UB EasyCash)
+// MoneyTracker build: Leif-only loan calculator (RCBC UnliPay / UB EasyCash / SSS Emergency Loan / Custom Rate)
 
 const SUPABASE_URL =
 "https://fvzrphhacxchvicekluj.supabase.co";
@@ -602,6 +637,9 @@ const RCBC_ADD_ON_RATE = 0.01;
 const UB_LOAN_TERMS = [6, 12, 18, 24, 36, 48, 60];
 const UB_ADD_ON_RATE = 0.0049;
 const UB_PROCESSING_FEE = 1000;
+const SSS_EMERGENCY_ANNUAL_RATE = 0.07;
+const SSS_EMERGENCY_PAYMENT_MONTHS = 24;
+const SSS_EMERGENCY_MORATORIUM_MONTHS = 6;
 
 function isLeifUser(){
 return String(currentUsername || "").trim().toLowerCase() === "leif";
@@ -632,8 +670,72 @@ if(amount < 30000) return 200;
 return amount * 0.01;
 }
 
-function getLoanOptions(bank, amount){
+function parseCustomTerms(value){
+return Array.from(new Set(
+String(value || "")
+.split(/[,\s]+/)
+.map(v => Math.round(Number(v)))
+.filter(v => Number.isFinite(v) && v > 0 && v <= 120)
+)).sort((a,b) => a-b);
+}
+
+function getCustomLoanOptions(amount, custom = {}){
+const terms = parseCustomTerms(custom.terms);
+if(!terms.length) return [];
+
+const ratePercent = Math.max(0, Number(custom.rate) || 0);
+const rate = ratePercent / 100;
+const method = custom.method || "monthly_addon";
+const fixedFee = Math.max(0, Number(custom.fixedFee) || 0);
+const percentFee = Math.max(0, Number(custom.percentFee) || 0);
+const fee = fixedFee + (amount * (percentFee / 100));
+
+return terms.map(term => {
+let monthly = 0;
+let installmentTotal = amount;
+
+if(method === "annual_addon"){
+const interest = amount * rate * (term / 12);
+installmentTotal = amount + interest;
+monthly = installmentTotal / term;
+}else if(method === "monthly_diminishing"){
+const r = rate;
+monthly = r > 0
+? amount * r / (1 - Math.pow(1 + r, -term))
+: amount / term;
+installmentTotal = monthly * term;
+}else if(method === "annual_diminishing"){
+const r = rate / 12;
+monthly = r > 0
+? amount * r / (1 - Math.pow(1 + r, -term))
+: amount / term;
+installmentTotal = monthly * term;
+}else if(method === "flat_once"){
+const interest = amount * rate;
+installmentTotal = amount + interest;
+monthly = installmentTotal / term;
+}else{
+// Monthly add-on / flat monthly rate.
+const interest = amount * rate * term;
+installmentTotal = amount + interest;
+monthly = installmentTotal / term;
+}
+
+return {
+term,
+monthly,
+fee,
+total: installmentTotal + fee
+};
+});
+}
+
+function getLoanOptions(bank, amount, custom = {}){
 if(!amount || amount <= 0) return [];
+
+if(bank === "CUSTOM"){
+return getCustomLoanOptions(amount, custom);
+}
 
 if(bank === "UB"){
 return UB_LOAN_TERMS.map(term => {
@@ -646,6 +748,30 @@ fee: UB_PROCESSING_FEE,
 total: installmentTotal + UB_PROCESSING_FEE
 };
 });
+}
+
+if(bank === "SSS"){
+/*
+SSS Emergency Loan estimate:
+- 7% p.a. on diminishing principal balance
+- 6-month payment moratorium
+- 24 equal monthly amortizations afterward
+- moratorium interest is spread equally across the 24 payments and does not itself earn interest
+Exact SSS figures may vary slightly because SSS applies pro-rated daily interest based on the actual loan date.
+*/
+const monthlyRate = SSS_EMERGENCY_ANNUAL_RATE / 12;
+const n = SSS_EMERGENCY_PAYMENT_MONTHS;
+const principalAmortization =
+amount * monthlyRate / (1 - Math.pow(1 + monthlyRate, -n));
+const moratoriumInterest =
+amount * SSS_EMERGENCY_ANNUAL_RATE * (SSS_EMERGENCY_MORATORIUM_MONTHS / 12);
+const monthly = principalAmortization + (moratoriumInterest / n);
+return [{
+term: n,
+monthly,
+fee: 0,
+total: monthly * n
+}];
 }
 
 return RCBC_LOAN_TERMS.map(term => {
@@ -677,15 +803,49 @@ const bank = box.querySelector(".loan-bank")?.value || "RCBC";
 const bankName = box.querySelector(".loan-bank-name");
 const note = box.querySelector(".loan-rate-note");
 const results = box.querySelector(".loan-results");
+const customPanel = box.querySelector(".loan-custom-panel");
+
+if(customPanel){
+customPanel.classList.toggle("show", bank === "CUSTOM");
+}
+
+const custom = {
+name: box.querySelector(".loan-custom-name")?.value?.trim() || "Custom Rate",
+rate: box.querySelector(".loan-custom-rate")?.value || "",
+method: box.querySelector(".loan-custom-method")?.value || "monthly_addon",
+terms: box.querySelector(".loan-custom-terms")?.value || "",
+fixedFee: box.querySelector(".loan-custom-fixed-fee")?.value || "",
+percentFee: box.querySelector(".loan-custom-percent-fee")?.value || ""
+};
 
 if(bankName){
-bankName.innerText = bank === "UB" ? "UB EasyCash" : "RCBC UnliPay";
+bankName.innerText = bank === "UB"
+? "UB EasyCash"
+: bank === "SSS"
+? "SSS Emergency Loan"
+: bank === "CUSTOM"
+? (custom.name || "Custom Rate")
+: "RCBC UnliPay";
 }
 
 if(note){
-note.innerText = bank === "UB"
-? "0.49% monthly add-on • ₱1,000 processing fee billed separately"
-: "3 months: 0% installment interest + processing fee • 6–36 months: 1% monthly add-on";
+if(bank === "UB"){
+note.innerText = "0.49% monthly add-on • ₱1,000 processing fee billed separately";
+}else if(bank === "SSS"){
+note.innerText = "7% per year on diminishing balance • 6-month payment moratorium + 24 monthly payments • estimated amount; SSS may vary slightly due to daily pro-rated interest";
+}else if(bank === "CUSTOM"){
+const methodLabels = {
+monthly_addon: "monthly add-on",
+annual_addon: "annual add-on",
+monthly_diminishing: "monthly diminishing / amortized",
+annual_diminishing: "annual diminishing / amortized",
+flat_once: "one-time flat rate"
+};
+const rateText = custom.rate === "" ? "Enter a rate" : `${Number(custom.rate) || 0}% ${methodLabels[custom.method] || "monthly add-on"}`;
+note.innerText = `${rateText} • custom fees are included in TOTAL but shown separately from MONTHLY`;
+}else{
+note.innerText = "3 months: 0% installment interest + processing fee • 6–36 months: 1% monthly add-on";
+}
 }
 
 if(!results) return;
@@ -699,7 +859,16 @@ results.innerHTML = `
 return;
 }
 
-const options = getLoanOptions(bank, amount);
+if(bank === "CUSTOM" && !parseCustomTerms(custom.terms).length){
+results.innerHTML = `
+<tr>
+<td colspan="4" class="loan-empty">Enter at least one custom term, such as 3, 6, 12.</td>
+</tr>
+`;
+return;
+}
+
+const options = getLoanOptions(bank, amount, custom);
 results.innerHTML = options.map(option => `
 <tr>
 <td>${option.term} MOS</td>
@@ -731,14 +900,93 @@ placeholder="Enter amount"
 oninput="updateLoanBox(this.closest('.loan-box')); saveData();"
 >
 
-<label class="loan-field-label">BANK</label>
+<label class="loan-field-label">BANK / LOAN TYPE</label>
 <select
 class="loan-bank"
 onchange="updateLoanBox(this.closest('.loan-box')); saveData();"
 >
 <option value="RCBC">RCBC UnliPay</option>
 <option value="UB">UB EasyCash</option>
+<option value="SSS">SSS Emergency Loan</option>
+<option value="CUSTOM">CUSTOM RATE / OTHER LOAN</option>
 </select>
+
+<div class="loan-custom-panel">
+<div class="loan-custom-grid">
+<div class="full">
+<label class="loan-field-label">CUSTOM LOAN / BANK NAME</label>
+<input
+class="loan-custom-input loan-custom-name"
+placeholder="Example: Shopee SLoan"
+oninput="updateLoanBox(this.closest('.loan-box')); saveData();"
+>
+</div>
+
+<div>
+<label class="loan-field-label">INTEREST RATE (%)</label>
+<input
+class="loan-custom-input loan-custom-rate"
+type="number"
+min="0"
+step="0.0001"
+placeholder="Example: 1.95"
+oninput="updateLoanBox(this.closest('.loan-box')); saveData();"
+>
+</div>
+
+<div>
+<label class="loan-field-label">RATE TYPE</label>
+<select
+class="loan-custom-select loan-custom-method"
+onchange="updateLoanBox(this.closest('.loan-box')); saveData();"
+>
+<option value="monthly_addon">Monthly add-on</option>
+<option value="annual_addon">Annual add-on</option>
+<option value="monthly_diminishing">Monthly diminishing / amortized</option>
+<option value="annual_diminishing">Annual diminishing / amortized</option>
+<option value="flat_once">One-time flat rate</option>
+</select>
+</div>
+
+<div class="full">
+<label class="loan-field-label">TERM(S) IN MONTHS</label>
+<input
+class="loan-custom-input loan-custom-terms"
+placeholder="Example: 3, 6, 12, 18"
+oninput="updateLoanBox(this.closest('.loan-box')); saveData();"
+>
+<div class="loan-custom-help">You can enter one term or several terms separated by commas. Example: 3, 6, 12.</div>
+</div>
+
+<div>
+<label class="loan-field-label">FIXED PROCESSING FEE (₱)</label>
+<input
+class="loan-custom-input loan-custom-fixed-fee"
+type="number"
+min="0"
+step="0.01"
+placeholder="0"
+oninput="updateLoanBox(this.closest('.loan-box')); saveData();"
+>
+</div>
+
+<div>
+<label class="loan-field-label">PROCESSING FEE (%)</label>
+<input
+class="loan-custom-input loan-custom-percent-fee"
+type="number"
+min="0"
+step="0.0001"
+placeholder="0"
+oninput="updateLoanBox(this.closest('.loan-box')); saveData();"
+>
+</div>
+</div>
+
+<div class="loan-custom-help">
+Monthly add-on is useful when a lender quotes a monthly rate. Diminishing / amortized uses the remaining-balance formula. Use the rate type shown in the lender's actual offer for the closest estimate.
+</div>
+</div>
 
 <div class="loan-bank-name">RCBC UnliPay</div>
 <div class="loan-rate-note"></div>
@@ -764,7 +1012,23 @@ container.appendChild(box);
 
 if(savedLoan){
 box.querySelector(".loan-amount").value = savedLoan.amount ?? "";
-box.querySelector(".loan-bank").value = savedLoan.bank === "UB" ? "UB" : "RCBC";
+box.querySelector(".loan-bank").value = ["RCBC", "UB", "SSS", "CUSTOM"].includes(savedLoan.bank)
+? savedLoan.bank
+: "RCBC";
+box.querySelector(".loan-custom-name").value = savedLoan.customName ?? "";
+box.querySelector(".loan-custom-rate").value = savedLoan.customRate ?? "";
+box.querySelector(".loan-custom-method").value = [
+"monthly_addon",
+"annual_addon",
+"monthly_diminishing",
+"annual_diminishing",
+"flat_once"
+].includes(savedLoan.customMethod)
+? savedLoan.customMethod
+: "monthly_addon";
+box.querySelector(".loan-custom-terms").value = savedLoan.customTerms ?? "";
+box.querySelector(".loan-custom-fixed-fee").value = savedLoan.customFixedFee ?? "";
+box.querySelector(".loan-custom-percent-fee").value = savedLoan.customPercentFee ?? "";
 }
 
 updateLoanBox(box);
@@ -2418,7 +2682,15 @@ if(isLeifUser()){
 document.querySelectorAll(".loan-box").forEach(box => {
 data.loans.push({
 amount: box.querySelector(".loan-amount")?.value || "",
-bank: box.querySelector(".loan-bank")?.value === "UB" ? "UB" : "RCBC"
+bank: ["RCBC", "UB", "SSS", "CUSTOM"].includes(box.querySelector(".loan-bank")?.value)
+? box.querySelector(".loan-bank").value
+: "RCBC",
+customName: box.querySelector(".loan-custom-name")?.value || "",
+customRate: box.querySelector(".loan-custom-rate")?.value || "",
+customMethod: box.querySelector(".loan-custom-method")?.value || "monthly_addon",
+customTerms: box.querySelector(".loan-custom-terms")?.value || "",
+customFixedFee: box.querySelector(".loan-custom-fixed-fee")?.value || "",
+customPercentFee: box.querySelector(".loan-custom-percent-fee")?.value || ""
 });
 });
 }
