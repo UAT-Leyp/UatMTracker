@@ -610,7 +610,7 @@ CLEAR ALL
 
 <script>
 
-// MoneyTracker build: Leif-only loan calculator (RCBC UnliPay / UB EasyCash / SSS Emergency Loan / Custom Rate)
+// MoneyTracker build: Leif-only loan calculator (RCBC UnliPay / UB EasyCash / UB EasyConvert / SSS Emergency Loan / Custom Rate)
 
 const SUPABASE_URL =
 "https://fvzrphhacxchvicekluj.supabase.co";
@@ -637,6 +637,9 @@ const RCBC_ADD_ON_RATE = 0.01;
 const UB_LOAN_TERMS = [6, 12, 18, 24, 36, 48, 60];
 const UB_ADD_ON_RATE = 0.0049;
 const UB_PROCESSING_FEE = 1000;
+const UB_EASYCONVERT_TERMS = [3, 6, 12, 24];
+const UB_EASYCONVERT_CMFR = 0.01;
+const UB_EASYCONVERT_PROCESSING_FEE = 350;
 const SSS_EMERGENCY_ANNUAL_RATE = 0.07;
 const SSS_EMERGENCY_PAYMENT_MONTHS = 24;
 const SSS_EMERGENCY_MORATORIUM_MONTHS = 6;
@@ -750,6 +753,19 @@ total: installmentTotal + UB_PROCESSING_FEE
 });
 }
 
+if(bank === "UB_EASYCONVERT"){
+return UB_EASYCONVERT_TERMS.map(term => {
+const monthly = (amount / term) + (amount * UB_EASYCONVERT_CMFR);
+const installmentTotal = monthly * term;
+return {
+term,
+monthly,
+fee: UB_EASYCONVERT_PROCESSING_FEE,
+total: installmentTotal + UB_EASYCONVERT_PROCESSING_FEE
+};
+});
+}
+
 if(bank === "SSS"){
 /*
 SSS Emergency Loan estimate:
@@ -821,6 +837,8 @@ percentFee: box.querySelector(".loan-custom-percent-fee")?.value || ""
 if(bankName){
 bankName.innerText = bank === "UB"
 ? "UB EasyCash"
+: bank === "UB_EASYCONVERT"
+? "UB EasyConvert"
 : bank === "SSS"
 ? "SSS Emergency Loan"
 : bank === "CUSTOM"
@@ -831,6 +849,8 @@ bankName.innerText = bank === "UB"
 if(note){
 if(bank === "UB"){
 note.innerText = "0.49% monthly add-on • ₱1,000 processing fee billed separately";
+}else if(bank === "UB_EASYCONVERT"){
+note.innerText = "1.00% converted monthly factor rate (published example) • ₱350 processing fee default • 3 / 6 / 12 / 24 months • initial interest from approval to statement date is not included in this estimate";
 }else if(bank === "SSS"){
 note.innerText = "7% per year on diminishing balance • 6-month payment moratorium + 24 monthly payments • estimated amount; SSS may vary slightly due to daily pro-rated interest";
 }else if(bank === "CUSTOM"){
@@ -907,6 +927,7 @@ onchange="updateLoanBox(this.closest('.loan-box')); saveData();"
 >
 <option value="RCBC">RCBC UnliPay</option>
 <option value="UB">UB EasyCash</option>
+<option value="UB_EASYCONVERT">UB EasyConvert</option>
 <option value="SSS">SSS Emergency Loan</option>
 <option value="CUSTOM">CUSTOM RATE / OTHER LOAN</option>
 </select>
@@ -1012,7 +1033,7 @@ container.appendChild(box);
 
 if(savedLoan){
 box.querySelector(".loan-amount").value = savedLoan.amount ?? "";
-box.querySelector(".loan-bank").value = ["RCBC", "UB", "SSS", "CUSTOM"].includes(savedLoan.bank)
+box.querySelector(".loan-bank").value = ["RCBC", "UB", "UB_EASYCONVERT", "SSS", "CUSTOM"].includes(savedLoan.bank)
 ? savedLoan.bank
 : "RCBC";
 box.querySelector(".loan-custom-name").value = savedLoan.customName ?? "";
@@ -2682,7 +2703,7 @@ if(isLeifUser()){
 document.querySelectorAll(".loan-box").forEach(box => {
 data.loans.push({
 amount: box.querySelector(".loan-amount")?.value || "",
-bank: ["RCBC", "UB", "SSS", "CUSTOM"].includes(box.querySelector(".loan-bank")?.value)
+bank: ["RCBC", "UB", "UB_EASYCONVERT", "SSS", "CUSTOM"].includes(box.querySelector(".loan-bank")?.value)
 ? box.querySelector(".loan-bank").value
 : "RCBC",
 customName: box.querySelector(".loan-custom-name")?.value || "",
