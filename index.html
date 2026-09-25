@@ -187,6 +187,93 @@ background:#1b1427;
 color:white;
 }
 
+.loan-box{
+margin-top:30px;
+background:#2b213d;
+border:1px solid #c084fc;
+border-radius:18px;
+padding:20px;
+}
+
+.loan-title{
+font-size:28px;
+margin-bottom:18px;
+color:#f3e8ff;
+}
+
+.loan-field-label{
+display:block;
+font-size:13px;
+font-weight:bold;
+letter-spacing:.5px;
+color:#d8b4fe;
+margin:12px 0 7px;
+}
+
+.loan-amount,
+.loan-bank{
+width:100%;
+padding:12px;
+border:1px solid #4c3566;
+border-radius:10px;
+background:#1b1427;
+color:white;
+outline:none;
+font-size:16px;
+}
+
+.loan-bank-name{
+font-size:24px;
+font-weight:bold;
+margin-top:22px;
+color:#d8b4fe;
+}
+
+.loan-rate-note{
+margin:7px 0 15px;
+font-size:13px;
+color:#c4b5fd;
+opacity:.9;
+}
+
+.loan-results-table{
+margin-top:10px;
+}
+
+.loan-results-table th,
+.loan-results-table td{
+text-align:right;
+}
+
+.loan-results-table th:first-child,
+.loan-results-table td:first-child{
+text-align:left;
+}
+
+.loan-empty{
+padding:18px 12px;
+text-align:center;
+opacity:.7;
+}
+
+.loan-actions{
+display:flex;
+gap:10px;
+margin-top:15px;
+flex-wrap:wrap;
+}
+
+@media (max-width:700px){
+body{padding:12px;}
+.container{padding:15px;}
+.title{font-size:42px;}
+.salary-box{min-width:100%;}
+.summary{width:100%;}
+.loan-results-table{font-size:13px;}
+.loan-results-table th,
+.loan-results-table td{padding:9px 6px;}
+}
+
 </style>
 
 </head>
@@ -410,6 +497,15 @@ onclick="addBreakdownBox()"
 </button>
 
 <button
+id="addLoanBtn"
+class="add-btn"
+onclick="addLoanBox()"
+style="display:none;"
+>
++ ADD LOAN
+</button>
+
+<button
 class="add-btn"
 onclick="importPreviousMonth()"
 >
@@ -472,11 +568,14 @@ CLEAR ALL
 
 </div>
 
+<div id="allLoans"></div>
 <div id="allBreakdowns"></div>
 
 </div>
 
 <script>
+
+// MoneyTracker build: Leif-only loan calculator (RCBC UnliPay / UB EasyCash)
 
 const SUPABASE_URL =
 "https://fvzrphhacxchvicekluj.supabase.co";
@@ -497,6 +596,189 @@ localStorage.getItem("currentMonth")
 let isLoading = false;
 let currentUser = null;
 let currentUsername = "";
+
+const RCBC_LOAN_TERMS = [3, 6, 9, 12, 18, 24, 36];
+const RCBC_ADD_ON_RATE = 0.01;
+const UB_LOAN_TERMS = [6, 12];
+const UB_ADD_ON_RATE = 0.0049;
+const UB_PROCESSING_FEE = 1000;
+
+function isLeifUser(){
+return String(currentUsername || "").trim().toLowerCase() === "leif";
+}
+
+function updateLeifOnlyUI(){
+const button = document.getElementById("addLoanBtn");
+if(button){
+button.style.display = isLeifUser() ? "inline-block" : "none";
+}
+
+if(!isLeifUser()){
+const loanContainer = document.getElementById("allLoans");
+if(loanContainer) loanContainer.innerHTML = "";
+}
+}
+
+function formatPeso(value){
+return Number(value || 0).toLocaleString("en-PH", {
+minimumFractionDigits: 2,
+maximumFractionDigits: 2
+});
+}
+
+function getRCBCProcessingFee(amount){
+if(amount < 10000) return 100;
+if(amount < 30000) return 200;
+return amount * 0.01;
+}
+
+function getLoanOptions(bank, amount){
+if(!amount || amount <= 0) return [];
+
+if(bank === "UB"){
+return UB_LOAN_TERMS.map(term => {
+const monthly = (amount / term) + (amount * UB_ADD_ON_RATE);
+const installmentTotal = monthly * term;
+return {
+term,
+monthly,
+fee: UB_PROCESSING_FEE,
+total: installmentTotal + UB_PROCESSING_FEE
+};
+});
+}
+
+return RCBC_LOAN_TERMS.map(term => {
+if(term === 3){
+const fee = getRCBCProcessingFee(amount);
+return {
+term,
+monthly: amount / 3,
+fee,
+total: amount + fee
+};
+}
+
+const monthly = (amount / term) + (amount * RCBC_ADD_ON_RATE);
+return {
+term,
+monthly,
+fee: 0,
+total: monthly * term
+};
+});
+}
+
+function updateLoanBox(box){
+if(!box || !isLeifUser()) return;
+
+const amount = Number(box.querySelector(".loan-amount")?.value) || 0;
+const bank = box.querySelector(".loan-bank")?.value || "RCBC";
+const bankName = box.querySelector(".loan-bank-name");
+const note = box.querySelector(".loan-rate-note");
+const results = box.querySelector(".loan-results");
+
+if(bankName){
+bankName.innerText = bank === "UB" ? "UB EasyCash" : "RCBC UnliPay";
+}
+
+if(note){
+note.innerText = bank === "UB"
+? "0.49% monthly add-on • ₱1,000 processing fee billed separately"
+: "3 months: 0% installment interest + processing fee • 6–36 months: 1% monthly add-on";
+}
+
+if(!results) return;
+
+if(amount <= 0){
+results.innerHTML = `
+<tr>
+<td colspan="4" class="loan-empty">Enter an amount above to see the installment options.</td>
+</tr>
+`;
+return;
+}
+
+const options = getLoanOptions(bank, amount);
+results.innerHTML = options.map(option => `
+<tr>
+<td>${option.term} MOS</td>
+<td>₱${formatPeso(option.monthly)}</td>
+<td>₱${formatPeso(option.total)}</td>
+<td>${option.fee ? `₱${formatPeso(option.fee)}` : "—"}</td>
+</tr>
+`).join("");
+}
+
+function addLoanBox(savedLoan = null){
+if(!isLeifUser()) return;
+
+const container = document.getElementById("allLoans");
+if(!container) return;
+
+const box = document.createElement("div");
+box.className = "loan-box";
+box.innerHTML = `
+<h2 class="loan-title">LOAN CALCULATOR</h2>
+
+<label class="loan-field-label">AMOUNT</label>
+<input
+class="loan-amount"
+type="number"
+min="0"
+step="0.01"
+placeholder="Enter amount"
+oninput="updateLoanBox(this.closest('.loan-box')); saveData();"
+>
+
+<label class="loan-field-label">BANK</label>
+<select
+class="loan-bank"
+onchange="updateLoanBox(this.closest('.loan-box')); saveData();"
+>
+<option value="RCBC">RCBC UnliPay</option>
+<option value="UB">UB EasyCash</option>
+</select>
+
+<div class="loan-bank-name">RCBC UnliPay</div>
+<div class="loan-rate-note"></div>
+
+<table class="loan-results-table">
+<thead>
+<tr>
+<th>TERM</th>
+<th>MONTHLY</th>
+<th>TOTAL</th>
+<th>FEE</th>
+</tr>
+</thead>
+<tbody class="loan-results"></tbody>
+</table>
+
+<div class="loan-actions">
+<button class="delete-btn" onclick="deleteLoanBox(this)">DELETE LOAN</button>
+</div>
+`;
+
+container.appendChild(box);
+
+if(savedLoan){
+box.querySelector(".loan-amount").value = savedLoan.amount ?? "";
+box.querySelector(".loan-bank").value = savedLoan.bank === "UB" ? "UB" : "RCBC";
+}
+
+updateLoanBox(box);
+
+if(!isLoading){
+saveData();
+}
+}
+
+function deleteLoanBox(button){
+if(!isLeifUser()) return;
+button.closest(".loan-box")?.remove();
+saveData();
+}
 
 function userStorageKey(){
 return `billTrackerData_${currentUsername}_${currentMonth}`;
@@ -589,6 +871,8 @@ document.getElementById(
 "loginScreen"
 ).style.display = "none";
 
+updateLeifOnlyUI();
+
 generateYearMonths();
 await loadData();
 calculateTotals();
@@ -614,6 +898,16 @@ sessionStorage.removeItem("moneyTrackerUsername");
 
 currentUser = null;
 currentUsername = "";
+
+updateLeifOnlyUI();
+document.getElementById("billTable").innerHTML = "";
+document.getElementById("allBreakdowns").innerHTML = "";
+document.getElementById("allLoans").innerHTML = "";
+document.getElementById("salary").value = "";
+document.getElementById("leftover").value = "";
+document.querySelector(".title").innerText = "BILLS";
+document.getElementById("currentUserLabel").innerText = "";
+calculateTotals();
 
 document.getElementById("loginScreen").style.display = "flex";
 document.getElementById("usernameInput").value = "";
@@ -651,6 +945,11 @@ currentMonth = user.last_month;
 document.getElementById(
 "loginScreen"
 ).style.display = "none";
+
+document.getElementById("currentUserLabel").innerText =
+`User: ${user.display_name || user.username}`;
+
+updateLeifOnlyUI();
 
 return true;
 }
@@ -788,6 +1087,7 @@ await supabaseClient
 
 document.getElementById("billTable").innerHTML = "";
 document.getElementById("allBreakdowns").innerHTML = "";
+document.getElementById("allLoans").innerHTML = "";
 
 if(currentUser){
 
@@ -2035,7 +2335,9 @@ document.getElementById("leftover").value,
 
 bills: [],
 
-breakdowns: []
+breakdowns: [],
+
+loans: []
 
 };
 
@@ -2112,8 +2414,17 @@ breakdown
 
 });
 
+if(isLeifUser()){
+document.querySelectorAll(".loan-box").forEach(box => {
+data.loans.push({
+amount: box.querySelector(".loan-amount")?.value || "",
+bank: box.querySelector(".loan-bank")?.value === "UB" ? "UB" : "RCBC"
+});
+});
+}
+
 localStorage.setItem(
-"billTrackerData",
+userStorageKey(),
 JSON.stringify(data)
 );
 
@@ -2153,6 +2464,14 @@ if(!currentUser) return;
 
 isLoading = true;
 
+// Clear the previous view first so switching users/months never leaves stale data visible.
+document.querySelector(".title").innerText = "BILLS";
+document.getElementById("salary").value = "";
+document.getElementById("leftover").value = "";
+document.getElementById("billTable").innerHTML = "";
+document.getElementById("allBreakdowns").innerHTML = "";
+document.getElementById("allLoans").innerHTML = "";
+
 let saved =
 localStorage.getItem(userStorageKey());
 
@@ -2189,6 +2508,8 @@ console.log(error);
 
 if(!saved){
 
+calculateTotals();
+calculateAllBreakdowns();
 isLoading = false;
 return;
 
@@ -2310,6 +2631,12 @@ item.description || "";
 });
 
 });
+
+if(isLeifUser()){
+(data.loans || []).forEach(loan => {
+addLoanBox(loan);
+});
+}
 
 calculateTotals();
 calculateAllBreakdowns();
