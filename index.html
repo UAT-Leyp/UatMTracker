@@ -1671,7 +1671,10 @@ card.dataset.cardId = savedCard?.id || makeId("card");
 card.innerHTML = `
 <div class="credit-card-heading">
   <div><h3>💳 <span class="cc-display-name">New Credit Card</span></h3><div class="view-subtitle cc-display-bank">Add card details below.</div></div>
-  <button class="delete-btn" onclick="deleteCreditCard(this)">DELETE CARD</button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+    <button class="add-btn" onclick="lessCreditCardOutstanding(this)" title="Subtract a payment or credit from this month's outstanding balance">− LESS OUTSTANDING</button>
+    <button class="delete-btn" onclick="deleteCreditCard(this)">DELETE CARD</button>
+  </div>
 </div>
 <div class="finance-grid">
   <div class="finance-field"><label>CARD NAME</label><input class="finance-input cc-name" placeholder="Example: UB Rewards" oninput="creditCardChanged(this.closest('.credit-card-item'), true);"></div>
@@ -1889,11 +1892,68 @@ if(bal) bal.innerText = `₱${formatPeso(remaining)}`;
 });
 }
 
+function lessCreditCardOutstanding(button){
+const card = button.closest(".credit-card-item");
+if(!card) return;
+
+const input = card.querySelector(".cc-outstanding");
+if(!input) return;
+
+const currentOutstanding = Math.max(0, Number(input.value) || 0);
+const cardName = card.querySelector(".cc-name")?.value?.trim() || "this credit card";
+
+if(currentOutstanding <= 0){
+alert(`${cardName} currently has no outstanding balance to reduce.`);
+return;
+}
+
+const answer = prompt(
+`LESS OUTSTANDING — ${cardName}\n\nCurrent outstanding: ₱${formatPeso(currentOutstanding)}\n\nEnter the amount to subtract for ${currentMonth}:`,
+""
+);
+
+if(answer === null) return;
+
+const amount = Number(String(answer).replace(/,/g, "").trim());
+if(!Number.isFinite(amount) || amount <= 0){
+alert("Enter a valid amount greater than ₱0.");
+return;
+}
+
+if(amount > currentOutstanding){
+alert(`The amount cannot be greater than the current outstanding balance of ₱${formatPeso(currentOutstanding)}.`);
+return;
+}
+
+const newOutstanding = Math.max(0, currentOutstanding - amount);
+input.value = Number(newOutstanding.toFixed(2));
+creditCardChanged(card, true);
+
+alert(
+`${cardName} outstanding reduced for ${currentMonth}.\n\n` +
+`Previous: ₱${formatPeso(currentOutstanding)}\n` +
+`Less: ₱${formatPeso(amount)}\n` +
+`New outstanding: ₱${formatPeso(newOutstanding)}\n\n` +
+`The new balance will auto-sync to future months. Earlier months stay unchanged.`
+);
+}
+
 async function deleteCreditCard(button){
 const card = button.closest(".credit-card-item");
 if(!card) return;
-const name = card.querySelector(".cc-name")?.value || "this credit card";
-if(!confirm(`Delete ${name}?\n\nThis removes the card from ${currentMonth} and all future months. Earlier months stay unchanged. Active loans remain, but future card links will be cleared.`)) return;
+const name = card.querySelector(".cc-name")?.value?.trim() || "this credit card";
+
+const confirmed = window.confirm(
+`⚠️ DELETE CREDIT CARD?\n\n` +
+`Card: ${name}\n\n` +
+`This will remove the card from ${currentMonth} and every future month.\n` +
+`Earlier months will stay unchanged.\n` +
+`Active loans will remain, but future links to this card will be cleared.\n\n` +
+`Press OK to DELETE, or Cancel to keep the card.`
+);
+
+if(!confirmed) return;
+
 const id = card.dataset.cardId;
 const sourceMonth = currentMonth;
 const timer = creditCardSyncTimers.get(id);
