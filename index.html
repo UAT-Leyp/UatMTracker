@@ -309,6 +309,255 @@ body{padding:12px;}
 .loan-custom-grid .full{grid-column:auto;}
 }
 
+
+/* Finance views: Credit Cards / Active Installments / Bills Calendar */
+.view-tabs{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin:0 0 22px;
+padding:10px;
+background:#1b1427;
+border:1px solid #4c3566;
+border-radius:14px;
+}
+.view-tab{
+background:#2b213d;
+color:#e9d5ff;
+border:1px solid #5b4277;
+padding:11px 16px;
+border-radius:10px;
+cursor:pointer;
+font-weight:bold;
+}
+.view-tab.active{
+background:#a855f7;
+color:white;
+box-shadow:0 0 16px rgba(168,85,247,.35);
+}
+.tracker-view{display:none;}
+.tracker-view.active{display:block;}
+.view-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:15px;
+flex-wrap:wrap;
+margin-bottom:18px;
+}
+.view-header h2{
+font-size:32px;
+color:#e9d5ff;
+}
+.view-subtitle{
+color:#c4b5fd;
+font-size:13px;
+line-height:1.5;
+margin-top:4px;
+}
+.finance-empty{
+padding:26px;
+text-align:center;
+color:#c4b5fd;
+border:1px dashed #5b4277;
+border-radius:14px;
+background:#1b1427;
+}
+
+.credit-card-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
+gap:16px;
+}
+.credit-card-item{
+background:#2b213d;
+border:1px solid #7e5aa6;
+border-radius:18px;
+padding:18px;
+box-shadow:0 10px 24px rgba(0,0,0,.18);
+}
+.credit-card-heading{
+display:flex;
+justify-content:space-between;
+gap:12px;
+align-items:flex-start;
+margin-bottom:12px;
+}
+.credit-card-heading h3{
+font-size:22px;
+color:#f3e8ff;
+}
+.finance-grid{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:12px;
+}
+.finance-field label{
+display:block;
+font-size:11px;
+font-weight:bold;
+letter-spacing:.4px;
+color:#d8b4fe;
+margin-bottom:6px;
+}
+.finance-input,.finance-select{
+width:100%;
+padding:10px;
+border:1px solid #4c3566;
+border-radius:9px;
+background:#1b1427;
+color:white;
+outline:none;
+}
+.credit-card-stats{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:10px;
+margin-top:14px;
+}
+.stat-tile{
+background:#1b1427;
+border:1px solid #4c3566;
+border-radius:12px;
+padding:12px;
+}
+.stat-tile small{display:block;color:#c4b5fd;margin-bottom:5px;}
+.stat-tile strong{font-size:18px;color:#fff;}
+.stat-tile .good{color:#86efac;}
+.stat-tile .warn{color:#fbbf24;}
+
+.installment-list{display:grid;gap:16px;}
+.installment-item{
+background:#2b213d;
+border:1px solid #7e5aa6;
+border-radius:18px;
+padding:18px;
+}
+.installment-top{
+display:flex;
+justify-content:space-between;
+gap:12px;
+flex-wrap:wrap;
+align-items:flex-start;
+margin-bottom:12px;
+}
+.installment-title{font-size:22px;color:#f3e8ff;font-weight:bold;}
+.installment-progress{
+height:9px;
+background:#1b1427;
+border-radius:999px;
+overflow:hidden;
+margin:12px 0 6px;
+}
+.installment-progress > span{
+display:block;
+height:100%;
+background:#a855f7;
+border-radius:999px;
+}
+.installment-summary{
+display:grid;
+grid-template-columns:repeat(4,minmax(0,1fr));
+gap:10px;
+margin-top:12px;
+}
+.installment-status{
+padding:8px 10px;
+border-radius:9px;
+border:none;
+font-weight:bold;
+color:white;
+}
+.installment-status.Paid{background:#22c55e;}
+.installment-status.Unpaid{background:#ef4444;}
+
+.calendar-shell{
+background:#21172f;
+border:1px solid #5b4277;
+border-radius:18px;
+padding:16px;
+}
+.calendar-title{
+font-size:26px;
+font-weight:bold;
+color:#f3e8ff;
+margin-bottom:14px;
+}
+.calendar-grid{
+display:grid;
+grid-template-columns:repeat(7,minmax(0,1fr));
+gap:7px;
+}
+.calendar-weekday{
+text-align:center;
+padding:9px 4px;
+font-size:12px;
+font-weight:bold;
+color:#c4b5fd;
+}
+.calendar-day{
+min-height:118px;
+background:#1b1427;
+border:1px solid #4c3566;
+border-radius:10px;
+padding:8px;
+}
+.calendar-day.empty{
+background:transparent;
+border-color:transparent;
+}
+.calendar-day-number{
+font-weight:bold;
+color:#e9d5ff;
+margin-bottom:7px;
+}
+.calendar-bill{
+display:block;
+width:100%;
+text-align:left;
+border:none;
+border-radius:7px;
+padding:6px 7px;
+margin-bottom:5px;
+font-size:11px;
+font-weight:bold;
+cursor:pointer;
+color:white;
+}
+.calendar-bill.paid{background:#15803d;}
+.calendar-bill.unpaid{background:#b91c1c;}
+.calendar-legend{
+display:flex;
+gap:14px;
+flex-wrap:wrap;
+font-size:12px;
+color:#c4b5fd;
+margin:12px 0;
+}
+.calendar-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;}
+.calendar-dot.paid{background:#22c55e;}
+.calendar-dot.unpaid{background:#ef4444;}
+.calendar-undated{
+margin-top:18px;
+background:#1b1427;
+border:1px solid #4c3566;
+border-radius:12px;
+padding:14px;
+}
+.calendar-undated h3{color:#e9d5ff;margin-bottom:8px;}
+.calendar-undated-item{padding:7px 0;border-bottom:1px solid #3d2d50;color:#ddd;}
+.calendar-undated-item:last-child{border-bottom:none;}
+.row-highlight{animation:rowGlow 1.8s ease;}
+@keyframes rowGlow{0%,100%{background:transparent;}50%{background:rgba(168,85,247,.28);}}
+
+@media(max-width:800px){
+.finance-grid,.credit-card-stats{grid-template-columns:1fr;}
+.installment-summary{grid-template-columns:repeat(2,minmax(0,1fr));}
+.calendar-grid{gap:4px;}
+.calendar-day{min-height:88px;padding:5px;}
+.calendar-bill{font-size:9px;padding:5px;}
+}
+
 </style>
 
 </head>
@@ -510,6 +759,14 @@ saveData();
 
 </div>
 
+<div class="view-tabs" id="viewTabs">
+<button class="view-tab active" data-view="billsView" onclick="switchTrackerView('billsView')">🧾 BILLS</button>
+<button class="view-tab" data-view="creditCardsView" onclick="switchTrackerView('creditCardsView')">💳 CREDIT CARDS</button>
+<button class="view-tab" data-view="installmentsView" onclick="switchTrackerView('installmentsView')">📆 ACTIVE LOANS</button>
+<button class="view-tab" data-view="calendarView" onclick="switchTrackerView('calendarView')">🗓️ CALENDAR</button>
+</div>
+
+<div id="billsView" class="tracker-view active">
 <div class="button-group">
 <button
 class="add-btn"
@@ -605,6 +862,39 @@ CLEAR ALL
 
 <div id="allLoans"></div>
 <div id="allBreakdowns"></div>
+</div>
+
+<div id="creditCardsView" class="tracker-view">
+  <div class="view-header">
+    <div>
+      <h2>💳 CREDIT CARD TRACKER</h2>
+      <div class="view-subtitle">Track several cards, limits, balances, due dates, minimum due, linked installments and annual fees.</div>
+    </div>
+    <button class="add-btn" onclick="addCreditCard()">+ ADD CREDIT CARD</button>
+  </div>
+  <div id="creditCardList" class="credit-card-grid"></div>
+</div>
+
+<div id="installmentsView" class="tracker-view">
+  <div class="view-header">
+    <div>
+      <h2>📆 ACTIVE INSTALLMENT / LOAN TRACKER</h2>
+      <div class="view-subtitle">Track the actual loan start date separately from the first payment date. Future copies begin only in the month of the first payment, then continue monthly until the term finishes. Add an owner/borrower name so you can track loans placed on your card for someone else.</div>
+    </div>
+    <button class="add-btn" onclick="addInstallment()">+ ADD ACTIVE LOAN</button>
+  </div>
+  <div id="installmentList" class="installment-list"></div>
+</div>
+
+<div id="calendarView" class="tracker-view">
+  <div class="view-header">
+    <div>
+      <h2>🗓️ BILLS CALENDAR</h2>
+      <div class="view-subtitle">A calendar view of the current month's bills. Click a bill to jump back to its row.</div>
+    </div>
+  </div>
+  <div id="calendarContent"></div>
+</div>
 
 </div>
 
@@ -631,6 +921,67 @@ localStorage.getItem("currentMonth")
 let isLoading = false;
 let currentUser = null;
 let currentUsername = "";
+let currentView = localStorage.getItem("moneyTrackerView") || "billsView";
+
+function makeId(prefix="id"){
+return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,9)}`;
+}
+
+function monthToIndex(monthValue){
+const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const [name, yearText] = String(monthValue || "").split("-");
+const m = names.indexOf(name);
+const y = Number(yearText);
+if(m < 0 || !y) return -1;
+return y * 12 + m;
+}
+
+function indexToMonth(index){
+const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const y = Math.floor(index / 12);
+const m = index % 12;
+return `${names[m]}-${y}`;
+}
+
+function monthFromDateValue(value){
+const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+if(!match) return "";
+const year = Number(match[1]);
+const month = Number(match[2]);
+if(month < 1 || month > 12) return "";
+const names = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+return `${names[month - 1]}-${year}`;
+}
+
+function dayFromDateValue(value){
+const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+if(!match) return "";
+const day = Number(match[3]);
+return day >= 1 && day <= 31 ? String(day) : "";
+}
+
+function prettyDateValue(value){
+const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+if(!match) return "Not set";
+const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const month = Number(match[2]);
+return `${names[month - 1]} ${Number(match[3])}, ${match[1]}`;
+}
+
+function getInstallmentPaymentStartMonth(record){
+return monthFromDateValue(record?.firstPaymentDate) || record?.paymentStartMonth || record?.startMonth || currentMonth;
+}
+
+function switchTrackerView(viewId){
+const valid = ["billsView","creditCardsView","installmentsView","calendarView"];
+if(!valid.includes(viewId)) viewId = "billsView";
+currentView = viewId;
+localStorage.setItem("moneyTrackerView", viewId);
+document.querySelectorAll(".tracker-view").forEach(v => v.classList.toggle("active", v.id === viewId));
+document.querySelectorAll(".view-tab").forEach(btn => btn.classList.toggle("active", btn.dataset.view === viewId));
+if(viewId === "calendarView") renderBillsCalendar();
+if(viewId === "creditCardsView") refreshCreditCardStats();
+}
 
 const RCBC_LOAN_TERMS = [3, 6, 9, 12, 18, 24, 36];
 const RCBC_ADD_ON_RATE = 0.01;
@@ -1065,6 +1416,470 @@ button.closest(".loan-box")?.remove();
 saveData();
 }
 
+
+function collectCreditCardsFromDOM(){
+return Array.from(document.querySelectorAll(".credit-card-item")).map(card => ({
+id: card.dataset.cardId || makeId("card"),
+name: card.querySelector(".cc-name")?.value || "",
+bank: card.querySelector(".cc-bank")?.value || "",
+last4: card.querySelector(".cc-last4")?.value || "",
+limit: card.querySelector(".cc-limit")?.value || "",
+outstanding: card.querySelector(".cc-outstanding")?.value || "",
+statementDate: card.querySelector(".cc-statement")?.value || "",
+dueDate: card.querySelector(".cc-due")?.value || "",
+minimumDue: card.querySelector(".cc-minimum")?.value || "",
+annualFeeDate: card.querySelector(".cc-annual")?.value || ""
+}));
+}
+
+function collectInstallmentsFromDOM(){
+return Array.from(document.querySelectorAll(".installment-item")).map(item => ({
+id: item.dataset.installmentId || makeId("inst"),
+name: item.querySelector(".inst-name")?.value || "",
+owner: item.querySelector(".inst-owner")?.value || "",
+lender: item.querySelector(".inst-lender")?.value || "",
+principal: item.querySelector(".inst-principal")?.value || "",
+monthlyPayment: item.querySelector(".inst-monthly")?.value || "",
+totalMonths: Math.max(1, Number(item.querySelector(".inst-term")?.value) || 1),
+installmentNumber: Math.max(0, Number(item.dataset.installmentNumber) || 0),
+startMonth: item.dataset.startMonth || currentMonth,
+sourceMonth: item.dataset.sourceMonth || item.dataset.startMonth || currentMonth,
+startDate: item.querySelector(".inst-start-date")?.value || "",
+firstPaymentDate: item.querySelector(".inst-first-payment-date")?.value || "",
+paymentStartMonth: monthFromDateValue(item.querySelector(".inst-first-payment-date")?.value || "") || item.dataset.paymentStartMonth || item.dataset.startMonth || currentMonth,
+dueDay: item.querySelector(".inst-due-day")?.value || "",
+creditCardId: item.querySelector(".inst-card-link")?.value || "",
+status: item.querySelector(".installment-status")?.value || "Unpaid"
+}));
+}
+
+function addCreditCard(savedCard=null){
+const list = document.getElementById("creditCardList");
+if(!list) return;
+const card = document.createElement("div");
+card.className = "credit-card-item";
+card.dataset.cardId = savedCard?.id || makeId("card");
+card.innerHTML = `
+<div class="credit-card-heading">
+  <div><h3>💳 <span class="cc-display-name">New Credit Card</span></h3><div class="view-subtitle cc-display-bank">Add card details below.</div></div>
+  <button class="delete-btn" onclick="deleteCreditCard(this)">DELETE CARD</button>
+</div>
+<div class="finance-grid">
+  <div class="finance-field"><label>CARD NAME</label><input class="finance-input cc-name" placeholder="Example: UB Rewards" oninput="updateCreditCardCard(this.closest('.credit-card-item')); saveData();"></div>
+  <div class="finance-field"><label>BANK</label><input class="finance-input cc-bank" placeholder="UnionBank / RCBC" oninput="updateCreditCardCard(this.closest('.credit-card-item')); saveData();"></div>
+  <div class="finance-field"><label>LAST 4 DIGITS</label><input class="finance-input cc-last4" maxlength="4" inputmode="numeric" placeholder="1234" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); saveData();"></div>
+  <div class="finance-field"><label>CREDIT LIMIT</label><input class="finance-input cc-limit" type="number" min="0" step="0.01" placeholder="0" oninput="updateCreditCardCard(this.closest('.credit-card-item')); saveData();"></div>
+  <div class="finance-field"><label>OUTSTANDING BALANCE</label><input class="finance-input cc-outstanding" type="number" min="0" step="0.01" placeholder="0" oninput="updateCreditCardCard(this.closest('.credit-card-item')); saveData();"></div>
+  <div class="finance-field"><label>MINIMUM AMOUNT DUE</label><input class="finance-input cc-minimum" type="number" min="0" step="0.01" placeholder="0" oninput="saveData();"></div>
+  <div class="finance-field"><label>STATEMENT DATE / DAY</label><input class="finance-input cc-statement" placeholder="Example: 15 or 2026-09-15" oninput="saveData();"></div>
+  <div class="finance-field"><label>PAYMENT DUE DATE / DAY</label><input class="finance-input cc-due" placeholder="Example: 5 or 2026-10-05" oninput="saveData();"></div>
+  <div class="finance-field" style="grid-column:1/-1"><label>ANNUAL FEE DATE</label><input class="finance-input cc-annual" placeholder="Example: 2027-03-01" oninput="saveData();"></div>
+</div>
+<div class="credit-card-stats">
+  <div class="stat-tile"><small>AVAILABLE CREDIT</small><strong class="cc-available good">₱0.00</strong></div>
+  <div class="stat-tile"><small>CREDIT USED</small><strong class="cc-utilization">0.0%</strong></div>
+  <div class="stat-tile"><small>CURRENT INSTALLMENTS</small><strong class="cc-installment-count">0</strong></div>
+  <div class="stat-tile"><small>REMAINING INSTALLMENT BALANCE</small><strong class="cc-installment-balance warn">₱0.00</strong></div>
+</div>`;
+list.appendChild(card);
+if(savedCard){
+card.querySelector(".cc-name").value = savedCard.name || "";
+card.querySelector(".cc-bank").value = savedCard.bank || "";
+card.querySelector(".cc-last4").value = savedCard.last4 || "";
+card.querySelector(".cc-limit").value = savedCard.limit ?? "";
+card.querySelector(".cc-outstanding").value = savedCard.outstanding ?? "";
+card.querySelector(".cc-statement").value = savedCard.statementDate || "";
+card.querySelector(".cc-due").value = savedCard.dueDate || "";
+card.querySelector(".cc-minimum").value = savedCard.minimumDue ?? "";
+card.querySelector(".cc-annual").value = savedCard.annualFeeDate || "";
+}
+updateCreditCardCard(card);
+refreshInstallmentCardOptions();
+if(!isLoading) saveData();
+}
+
+function updateCreditCardCard(card){
+if(!card) return;
+const name = card.querySelector(".cc-name")?.value?.trim() || "New Credit Card";
+const bank = card.querySelector(".cc-bank")?.value?.trim() || "Add card details below.";
+const limit = Number(card.querySelector(".cc-limit")?.value) || 0;
+const outstanding = Number(card.querySelector(".cc-outstanding")?.value) || 0;
+const available = limit - outstanding;
+const utilization = limit > 0 ? (outstanding / limit) * 100 : 0;
+card.querySelector(".cc-display-name").innerText = name;
+card.querySelector(".cc-display-bank").innerText = bank;
+card.querySelector(".cc-available").innerText = `₱${formatPeso(available)}`;
+card.querySelector(".cc-utilization").innerText = `${utilization.toFixed(1)}%`;
+refreshCreditCardStats();
+}
+
+function refreshCreditCardStats(){
+const installments = collectInstallmentsFromDOM();
+document.querySelectorAll(".credit-card-item").forEach(card => {
+const id = card.dataset.cardId;
+const linked = installments.filter(i => i.creditCardId === id && i.installmentNumber <= i.totalMonths);
+let remaining = 0;
+linked.forEach(i => {
+const monthly = Number(i.monthlyPayment) || 0;
+const n = Math.max(0, Number(i.installmentNumber) || 0);
+const remainingPayments = n <= 0
+? Math.max(0, Number(i.totalMonths) || 0)
+: Math.max(0, i.totalMonths - n + (i.status === "Paid" ? 0 : 1));
+remaining += monthly * remainingPayments;
+});
+const count = card.querySelector(".cc-installment-count");
+const bal = card.querySelector(".cc-installment-balance");
+if(count) count.innerText = String(linked.length);
+if(bal) bal.innerText = `₱${formatPeso(remaining)}`;
+});
+}
+
+async function deleteCreditCard(button){
+const card = button.closest(".credit-card-item");
+if(!card) return;
+const name = card.querySelector(".cc-name")?.value || "this credit card";
+if(!confirm(`Delete ${name}?\\n\\nActive loans linked to it will remain, but their card link will be cleared in this month.`)) return;
+const id = card.dataset.cardId;
+document.querySelectorAll(".inst-card-link").forEach(sel => { if(sel.value === id) sel.value = ""; });
+card.remove();
+refreshInstallmentCardOptions();
+refreshCreditCardStats();
+await saveData();
+}
+
+function refreshInstallmentCardOptions(){
+const cards = collectCreditCardsFromDOM();
+document.querySelectorAll(".inst-card-link").forEach(select => {
+const current = select.value;
+select.innerHTML = `<option value="">Not linked to a credit card</option>` + cards.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name || c.bank || "Credit Card")}</option>`).join("");
+if(cards.some(c => c.id === current)) select.value = current;
+});
+}
+
+function addInstallment(saved=null){
+const list = document.getElementById("installmentList");
+if(!list) return;
+const item = document.createElement("div");
+item.className = "installment-item";
+item.dataset.installmentId = saved?.id || makeId("inst");
+item.dataset.installmentNumber = String(saved?.installmentNumber ?? 0);
+item.dataset.startMonth = saved?.startMonth || saved?.sourceMonth || currentMonth;
+item.dataset.sourceMonth = saved?.sourceMonth || saved?.startMonth || currentMonth;
+item.dataset.paymentStartMonth = saved?.paymentStartMonth || monthFromDateValue(saved?.firstPaymentDate || "") || saved?.startMonth || currentMonth;
+item.innerHTML = `
+<div class="installment-top">
+  <div><div class="installment-title">📆 <span class="inst-display-name">New Active Loan</span></div><div class="view-subtitle inst-position"></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <select class="installment-status Unpaid" onchange="updateInstallmentCard(this.closest('.installment-item')); saveData();"><option value="Unpaid">Unpaid</option><option value="Paid">Paid</option></select>
+    <button class="add-btn" onclick="syncInstallmentFromCard(this)">SYNC NOW</button>
+    <button class="delete-btn" onclick="deleteInstallment(this)">DELETE</button>
+  </div>
+</div>
+<div class="finance-grid">
+  <div class="finance-field"><label>LOAN / INSTALLMENT NAME</label><input class="finance-input inst-name" placeholder="Example: UB EasyCash" oninput="updateInstallmentCard(this.closest('.installment-item')); saveData();" onchange="scheduleInstallmentSync(this.closest('.installment-item'))"></div>
+  <div class="finance-field"><label>LOAN OWNER / BORROWER</label><input class="finance-input inst-owner" placeholder="Example: Leif / Mom / John" oninput="updateInstallmentCard(this.closest('.installment-item')); saveData();" onchange="scheduleInstallmentSync(this.closest('.installment-item'))"></div>
+  <div class="finance-field"><label>LENDER / BANK</label><input class="finance-input inst-lender" placeholder="UnionBank / RCBC / Shopee" oninput="saveData();" onchange="scheduleInstallmentSync(this.closest('.installment-item'))"></div>
+  <div class="finance-field"><label>ORIGINAL AMOUNT</label><input class="finance-input inst-principal" type="number" min="0" step="0.01" placeholder="0" oninput="updateInstallmentCard(this.closest('.installment-item')); saveData();" onchange="scheduleInstallmentSync(this.closest('.installment-item'))"></div>
+  <div class="finance-field"><label>MONTHLY PAYMENT</label><input class="finance-input inst-monthly" type="number" min="0" step="0.01" placeholder="0" oninput="updateInstallmentCard(this.closest('.installment-item')); saveData();" onchange="scheduleInstallmentSync(this.closest('.installment-item'))"></div>
+  <div class="finance-field"><label>TOTAL TERM (MONTHS)</label><input class="finance-input inst-term" type="number" min="1" max="120" step="1" placeholder="12" oninput="updateInstallmentCard(this.closest('.installment-item')); saveData();" onchange="scheduleInstallmentSync(this.closest('.installment-item'))"></div>
+  <div class="finance-field"><label>LOAN / PURCHASE START DATE</label><input class="finance-input inst-start-date" type="date" oninput="updateInstallmentCard(this.closest('.installment-item')); saveData();" onchange="scheduleInstallmentSync(this.closest('.installment-item'))"></div>
+  <div class="finance-field"><label>FIRST PAYMENT DATE</label><input class="finance-input inst-first-payment-date" type="date" oninput="handleFirstPaymentDateChange(this.closest('.installment-item'), false);" onchange="handleFirstPaymentDateChange(this.closest('.installment-item'), true);"></div>
+  <div class="finance-field"><label>DUE DAY EACH MONTH</label><input class="finance-input inst-due-day" type="number" min="1" max="31" step="1" placeholder="Auto from first payment date" oninput="saveData();" onchange="scheduleInstallmentSync(this.closest('.installment-item'))"></div>
+  <div class="finance-field"><label>LINKED CREDIT CARD</label><select class="finance-select inst-card-link" onchange="refreshCreditCardStats(); saveData(); scheduleInstallmentSync(this.closest('.installment-item'));"><option value="">Not linked to a credit card</option></select></div>
+</div>
+<div class="installment-progress"><span></span></div>
+<div class="view-subtitle inst-progress-text"></div>
+<div class="installment-summary">
+  <div class="stat-tile"><small>THIS MONTH</small><strong class="inst-this-month">₱0.00</strong></div>
+  <div class="stat-tile"><small>PAYMENT NO.</small><strong class="inst-payment-number">1 / 1</strong></div>
+  <div class="stat-tile"><small>PAYMENTS LEFT</small><strong class="inst-payments-left">1</strong></div>
+  <div class="stat-tile"><small>EST. REMAINING</small><strong class="inst-remaining warn">₱0.00</strong></div>
+</div>`;
+list.appendChild(item);
+refreshInstallmentCardOptions();
+if(saved){
+item.querySelector(".inst-name").value = saved.name || "";
+item.querySelector(".inst-owner").value = saved.owner || "";
+item.querySelector(".inst-lender").value = saved.lender || "";
+item.querySelector(".inst-principal").value = saved.principal ?? "";
+item.querySelector(".inst-monthly").value = saved.monthlyPayment ?? "";
+item.querySelector(".inst-term").value = saved.totalMonths ?? "";
+item.querySelector(".inst-start-date").value = saved.startDate || "";
+item.querySelector(".inst-first-payment-date").value = saved.firstPaymentDate || "";
+item.querySelector(".inst-due-day").value = saved.dueDay ?? dayFromDateValue(saved.firstPaymentDate || "");
+item.dataset.paymentStartMonth = saved.paymentStartMonth || monthFromDateValue(saved.firstPaymentDate || "") || saved.startMonth || currentMonth;
+item.querySelector(".inst-card-link").value = saved.creditCardId || "";
+item.querySelector(".installment-status").value = saved.status || "Unpaid";
+}
+updateInstallmentCard(item);
+if(!isLoading) saveData();
+}
+
+function handleFirstPaymentDateChange(item, shouldSync){
+if(!item) return;
+const firstPaymentDate = item.querySelector(".inst-first-payment-date")?.value || "";
+const dueDayInput = item.querySelector(".inst-due-day");
+const autoDay = dayFromDateValue(firstPaymentDate);
+if(dueDayInput && autoDay) dueDayInput.value = autoDay;
+item.dataset.paymentStartMonth = monthFromDateValue(firstPaymentDate) || item.dataset.paymentStartMonth || item.dataset.startMonth || currentMonth;
+const currentIdx = monthToIndex(currentMonth);
+const paymentIdx = monthToIndex(item.dataset.paymentStartMonth);
+if(currentIdx >= 0 && paymentIdx >= 0 && currentIdx < paymentIdx) item.dataset.installmentNumber = "0";
+updateInstallmentCard(item);
+saveData();
+if(shouldSync) scheduleInstallmentSync(item);
+}
+
+function updateInstallmentCard(item){
+if(!item) return;
+const name = item.querySelector(".inst-name")?.value?.trim() || "New Active Loan";
+const owner = item.querySelector(".inst-owner")?.value?.trim() || "Unassigned";
+const monthly = Number(item.querySelector(".inst-monthly")?.value) || 0;
+const totalMonths = Math.max(1, Number(item.querySelector(".inst-term")?.value) || 1);
+const startDate = item.querySelector(".inst-start-date")?.value || "";
+const firstPaymentDate = item.querySelector(".inst-first-payment-date")?.value || "";
+const paymentStartMonth = monthFromDateValue(firstPaymentDate) || item.dataset.paymentStartMonth || item.dataset.startMonth || currentMonth;
+item.dataset.paymentStartMonth = paymentStartMonth;
+const currentIndex = monthToIndex(currentMonth);
+const paymentStartIndex = monthToIndex(paymentStartMonth);
+const scheduledNum = Math.max(0, Number(item.dataset.installmentNumber) || 0);
+const isBeforeFirstPayment = paymentStartIndex >= 0 && currentIndex >= 0 && currentIndex < paymentStartIndex;
+const num = isBeforeFirstPayment ? 0 : Math.min(totalMonths, Math.max(1, scheduledNum || (currentIndex - paymentStartIndex + 1)));
+const status = item.querySelector(".installment-status")?.value || "Unpaid";
+const paidThrough = num <= 0 ? 0 : num - (status === "Paid" ? 0 : 1);
+const remainingPayments = num <= 0 ? totalMonths : Math.max(0, totalMonths - num + (status === "Paid" ? 0 : 1));
+const pct = Math.max(0, Math.min(100, (paidThrough / totalMonths) * 100));
+const startLabel = startDate ? prettyDateValue(startDate) : (item.dataset.sourceMonth || item.dataset.startMonth || currentMonth);
+const firstPaymentLabel = firstPaymentDate ? prettyDateValue(firstPaymentDate) : paymentStartMonth;
+item.querySelector(".inst-display-name").innerText = name;
+item.querySelector(".inst-position").innerText = `👤 Owner: ${owner} • Started ${startLabel} • 1st payment ${firstPaymentLabel} • showing ${currentMonth}`;
+item.querySelector(".installment-status").className = `installment-status ${status}`;
+item.querySelector(".installment-status").style.display = isBeforeFirstPayment ? "none" : "";
+item.querySelector(".installment-progress span").style.width = `${pct}%`;
+item.querySelector(".inst-progress-text").innerText = isBeforeFirstPayment
+? `Payment has not started yet. The first payment will appear in ${paymentStartMonth}.`
+: `${Math.max(0, paidThrough)} of ${totalMonths} scheduled payments completed before/including this month.`;
+item.querySelector(".inst-this-month").innerText = isBeforeFirstPayment ? "₱0.00" : `₱${formatPeso(monthly)}`;
+item.querySelector(".inst-payment-number").innerText = isBeforeFirstPayment ? `Starts ${paymentStartMonth}` : `${num} / ${totalMonths}`;
+item.querySelector(".inst-payments-left").innerText = String(remainingPayments);
+item.querySelector(".inst-remaining").innerText = `₱${formatPeso(monthly * remainingPayments)}`;
+refreshCreditCardStats();
+}
+
+function scheduleInstallmentSync(item){
+if(!item || isLoading || !currentUser) return;
+clearTimeout(item._autoSyncTimer);
+item._autoSyncTimer = setTimeout(async () => {
+const record = collectInstallmentsFromDOM().find(i => i.id === item.dataset.installmentId);
+if(!record) return;
+if(!record.name.trim()) return;
+if(!Number(record.monthlyPayment) || !Number(record.totalMonths)) return;
+await saveData();
+await syncInstallmentSchedule(record, true);
+const msg = item.querySelector(".inst-position");
+if(msg){
+const owner = item.querySelector(".inst-owner")?.value?.trim() || "Unassigned";
+const startDate = item.querySelector(".inst-start-date")?.value || "";
+const firstPaymentDate = item.querySelector(".inst-first-payment-date")?.value || "";
+const paymentStartMonth = monthFromDateValue(firstPaymentDate) || item.dataset.paymentStartMonth || item.dataset.startMonth || currentMonth;
+const original = `👤 Owner: ${owner} • Started ${startDate ? prettyDateValue(startDate) : (item.dataset.sourceMonth || item.dataset.startMonth || currentMonth)} • 1st payment ${firstPaymentDate ? prettyDateValue(firstPaymentDate) : paymentStartMonth} • showing ${currentMonth}`;
+msg.innerText = `${original} • ✓ future months synced`;
+setTimeout(() => { if(msg) msg.innerText = original; }, 1800);
+}
+}, 900);
+}
+
+async function syncInstallmentFromCard(button){
+const item = button.closest(".installment-item");
+if(!item || !currentUser) return;
+const record = collectInstallmentsFromDOM().find(i => i.id === item.dataset.installmentId);
+if(!record) return;
+if(!record.name.trim()) { alert("Add a loan/installment name first."); return; }
+if(!Number(record.monthlyPayment) || !Number(record.totalMonths)){ alert("Enter the monthly payment and total term first."); return; }
+await saveData();
+await syncInstallmentSchedule(record);
+alert(`Saved and copied ${record.name} starting ${getInstallmentPaymentStartMonth(record)} through its ${record.totalMonths}-month payment term.`);
+}
+
+async function syncInstallmentSchedule(record, silent=false){
+if(!currentUser) return;
+const sourceMonth = record.sourceMonth || record.startMonth || currentMonth;
+const paymentStartMonth = getInstallmentPaymentStartMonth(record);
+const startIndex = monthToIndex(paymentStartMonth);
+if(startIndex < 0) return;
+const totalMonths = Math.max(1, Number(record.totalMonths) || 1);
+const minIndex = monthToIndex("April-2026");
+const maxIndex = monthToIndex("December-2035");
+const endIndex = Math.min(maxIndex, startIndex + totalMonths - 1);
+const validMonths = [];
+for(let idx=Math.max(startIndex,minIndex); idx<=endIndex; idx++) validMonths.push(indexToMonth(idx));
+if(!validMonths.length) return;
+
+/* Pull all month rows so shortening a term can also remove stale future copies. */
+const { data: rows, error } = await supabaseClient
+.from("money_data")
+.select("month,data")
+.eq("user_id", currentUser.id);
+if(error){
+console.log(error);
+if(!silent) alert("Could not sync the installment schedule.");
+return;
+}
+const map = new Map((rows||[]).map(r => [r.month, typeof r.data === "string" ? JSON.parse(r.data) : (r.data || {})]));
+const upsertMap = new Map();
+
+validMonths.forEach((month, offset) => {
+let data = map.get(month) || {title:"BILLS",salary:"",leftover:"",bills:[],breakdowns:[],loans:[],creditCards:[],installments:[]};
+data.bills = Array.isArray(data.bills) ? data.bills : [];
+data.breakdowns = Array.isArray(data.breakdowns) ? data.breakdowns : [];
+data.loans = Array.isArray(data.loans) ? data.loans : [];
+data.creditCards = Array.isArray(data.creditCards) ? data.creditCards : [];
+data.installments = Array.isArray(data.installments) ? data.installments : [];
+const existing = data.installments.find(x => x.id === record.id);
+const occurrence = {
+...record,
+installmentNumber: offset + 1,
+startMonth: sourceMonth,
+sourceMonth,
+paymentStartMonth,
+status: existing?.status || (month === currentMonth && month === paymentStartMonth ? record.status : "Unpaid")
+};
+if(existing) Object.assign(existing, occurrence); else data.installments.push(occurrence);
+upsertMap.set(month,{user_id: currentUser.id, month, data: JSON.stringify(data)});
+localStorage.setItem(`billTrackerData_${currentUsername}_${month}`, JSON.stringify(data));
+});
+
+/* Remove stale copies outside the payment schedule. Keep the original/source month
+   so the loan can be recorded before its first payment begins. */
+const validMonthSet = new Set(validMonths);
+(rows||[]).forEach(r => {
+const idx = monthToIndex(r.month);
+if(idx < minIndex || idx > maxIndex) return;
+if(r.month === sourceMonth || validMonthSet.has(r.month)) return;
+let data = typeof r.data === "string" ? JSON.parse(r.data) : (r.data || {});
+if(!Array.isArray(data.installments) || !data.installments.some(x => x.id === record.id)) return;
+data.installments = data.installments.filter(x => x.id !== record.id);
+upsertMap.set(r.month,{user_id:currentUser.id,month:r.month,data:JSON.stringify(data)});
+localStorage.setItem(`billTrackerData_${currentUsername}_${r.month}`, JSON.stringify(data));
+});
+
+const upserts = Array.from(upsertMap.values());
+const { error: saveError } = await supabaseClient.from("money_data").upsert(upserts, {onConflict:"user_id,month"});
+if(saveError){
+console.log(saveError);
+if(!silent) alert("Some future months could not be updated.");
+return;
+}
+}
+async function deleteInstallment(button){
+const item = button.closest(".installment-item");
+if(!item || !currentUser) return;
+const id = item.dataset.installmentId;
+const name = item.querySelector(".inst-name")?.value || "this installment";
+if(!confirm(`Delete ${name}?\\n\\nThis removes it from the current month and all future months in its schedule.`)) return;
+const startIndex = monthToIndex(currentMonth);
+const endIndex = monthToIndex("December-2035");
+const {data: rows, error} = await supabaseClient.from("money_data").select("month,data").eq("user_id",currentUser.id);
+if(error){ console.log(error); alert("Could not remove the installment schedule."); return; }
+const upserts=[];
+(rows||[]).forEach(r => {
+const idx=monthToIndex(r.month);
+if(idx < startIndex || idx > endIndex) return;
+let data=typeof r.data === "string" ? JSON.parse(r.data) : (r.data||{});
+if(!Array.isArray(data.installments) || !data.installments.some(x=>x.id===id)) return;
+data.installments=data.installments.filter(x=>x.id!==id);
+upserts.push({user_id:currentUser.id,month:r.month,data:JSON.stringify(data)});
+localStorage.setItem(`billTrackerData_${currentUsername}_${r.month}`, JSON.stringify(data));
+});
+if(upserts.length){
+const {error:e}=await supabaseClient.from("money_data").upsert(upserts,{onConflict:"user_id,month"});
+if(e){console.log(e);alert("Could not remove all future occurrences.");return;}
+}
+item.remove();
+refreshCreditCardStats();
+await saveData();
+}
+
+function parseBillDueDate(value){
+const raw = String(value || "").trim();
+if(!raw) return null;
+const [monthName, yearText] = currentMonth.split("-");
+const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const monthIndex=months.indexOf(monthName);
+const year=Number(yearText);
+if(/^\\d{4}-\\d{2}-\\d{2}$/.test(raw)){
+const [y,m,d]=raw.split("-").map(Number);
+const dt=new Date(y,m-1,d);
+if(dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d) return dt;
+}
+if(/^\\d{1,2}$/.test(raw)){
+const d=Number(raw); const dt=new Date(year,monthIndex,d);
+if(dt.getMonth()===monthIndex) return dt;
+}
+if(/^\\d{1,2}[\\/-]\\d{1,2}$/.test(raw)){
+const [a,b]=raw.split(/[\\/-]/).map(Number);
+const dt=new Date(year,a-1,b);
+if(!isNaN(dt)) return dt;
+}
+let dt=new Date(`${raw} ${year}`);
+if(!isNaN(dt)) return dt;
+dt=new Date(raw);
+return isNaN(dt) ? null : dt;
+}
+
+function renderBillsCalendar(){
+const target=document.getElementById("calendarContent");
+if(!target) return;
+const [monthName,yearText]=currentMonth.split("-");
+const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const m=months.indexOf(monthName), y=Number(yearText);
+if(m<0 || !y){ target.innerHTML='<div class="finance-empty">Select a valid month.</div>'; return; }
+const firstDay=new Date(y,m,1).getDay();
+const daysInMonth=new Date(y,m+1,0).getDate();
+const bills=Array.from(document.querySelectorAll("#billTable tr")).map((row,index)=>{
+const inputs=row.querySelectorAll("input");
+const status=row.querySelector("select")?.value || "Unpaid";
+return {index,name:inputs[0]?.value || "Unnamed Bill",price:Number(inputs[1]?.value)||0,dueDate:inputs[2]?.value||"",status};
+});
+const byDay=new Map(), undated=[];
+bills.forEach(b=>{
+const dt=parseBillDueDate(b.dueDate);
+if(dt && dt.getFullYear()===y && dt.getMonth()===m){
+const d=dt.getDate(); if(!byDay.has(d)) byDay.set(d,[]); byDay.get(d).push(b);
+}else if(b.name.trim() || b.price || b.dueDate.trim()) undated.push(b);
+});
+const cells=[];
+for(let i=0;i<firstDay;i++) cells.push('<div class="calendar-day empty"></div>');
+for(let d=1;d<=daysInMonth;d++){
+const items=(byDay.get(d)||[]).map(b=>`<button class="calendar-bill ${b.status==='Paid'?'paid':'unpaid'}" onclick="openBillFromCalendar(${b.index})" title="${escapeHtml(b.name)}">${escapeHtml(b.name)}${b.price?` • ₱${formatPeso(b.price)}`:''}</button>`).join('');
+cells.push(`<div class="calendar-day"><div class="calendar-day-number">${d}</div>${items}</div>`);
+}
+target.innerHTML=`<div class="calendar-shell"><div class="calendar-title">${escapeHtml(currentMonth)}</div><div class="calendar-legend"><span><i class="calendar-dot paid"></i>Paid</span><span><i class="calendar-dot unpaid"></i>Unpaid</span><span>Tip: Due Date can be YYYY-MM-DD or just a day number.</span></div><div class="calendar-grid">${['SUN','MON','TUE','WED','THU','FRI','SAT'].map(x=>`<div class="calendar-weekday">${x}</div>`).join('')}${cells.join('')}</div></div>` + (undated.length ? `<div class="calendar-undated"><h3>NO CALENDAR DATE / UNRECOGNIZED DATE</h3>${undated.map(b=>`<div class="calendar-undated-item">${escapeHtml(b.name)}${b.dueDate?` — ${escapeHtml(b.dueDate)}`:''}</div>`).join('')}</div>` : '');
+}
+
+function openBillFromCalendar(index){
+switchTrackerView("billsView");
+const row=document.querySelectorAll("#billTable tr")[index];
+if(row){row.classList.remove("row-highlight"); void row.offsetWidth; row.classList.add("row-highlight"); row.scrollIntoView({behavior:"smooth",block:"center"});}
+}
+
+async function inheritCreditCardsIfMissing(data){
+if(Object.prototype.hasOwnProperty.call(data,"creditCards")) return data;
+try{
+const {data: rows,error}=await supabaseClient.from("money_data").select("month,data").eq("user_id",currentUser.id);
+if(error) return data;
+const currentIdx=monthToIndex(currentMonth);
+let best=null,bestIdx=-1;
+(rows||[]).forEach(r=>{
+const idx=monthToIndex(r.month); if(idx<0 || idx>=currentIdx || idx<=bestIdx) return;
+const obj=typeof r.data==="string"?JSON.parse(r.data):(r.data||{});
+if(Array.isArray(obj.creditCards) && obj.creditCards.length){best=obj.creditCards;bestIdx=idx;}
+});
+if(best) data.creditCards=best.map(c=>({...c}));
+}catch(e){console.log(e);}
+return data;
+}
+
 function userStorageKey(){
 return `billTrackerData_${currentUsername}_${currentMonth}`;
 }
@@ -1187,6 +2002,8 @@ currentUsername = "";
 updateLeifOnlyUI();
 document.getElementById("billTable").innerHTML = "";
 document.getElementById("allBreakdowns").innerHTML = "";
+document.getElementById("creditCardList").innerHTML = "";
+document.getElementById("installmentList").innerHTML = "";
 document.getElementById("allLoans").innerHTML = "";
 document.getElementById("salary").value = "";
 document.getElementById("leftover").value = "";
@@ -2167,6 +2984,7 @@ select.classList.add("unpaid");
 }
 
 saveData();
+renderBillsCalendar();
 
 }
 
@@ -2245,6 +3063,8 @@ document.getElementById(
 ).innerText =
 moneyLeft.toLocaleString();
 
+if(currentView === "calendarView") renderBillsCalendar();
+
 }
 
 function calculateAllBreakdowns(){
@@ -2300,7 +3120,7 @@ row.innerHTML = `
 <input
 class="table-input"
 placeholder="Bill Name"
-oninput="saveData()"
+oninput="saveData(); renderBillsCalendar();"
 >
 </td>
 
@@ -2341,8 +3161,8 @@ Unpaid
 <td>
 <input
 class="table-input"
-placeholder="Due Date"
-oninput="saveData()"
+placeholder="YYYY-MM-DD or day"
+oninput="saveData(); renderBillsCalendar();"
 >
 </td>
 
@@ -2385,6 +3205,7 @@ button.closest("tr").remove();
 calculateTotals();
 
 saveData();
+renderBillsCalendar();
 
 }
 
@@ -2622,7 +3443,11 @@ bills: [],
 
 breakdowns: [],
 
-loans: []
+loans: [],
+
+creditCards: [],
+
+installments: []
 
 };
 
@@ -2716,6 +3541,9 @@ customPercentFee: box.querySelector(".loan-custom-percent-fee")?.value || ""
 });
 }
 
+data.creditCards = collectCreditCardsFromDOM();
+data.installments = collectInstallmentsFromDOM();
+
 localStorage.setItem(
 userStorageKey(),
 JSON.stringify(data)
@@ -2764,6 +3592,8 @@ document.getElementById("leftover").value = "";
 document.getElementById("billTable").innerHTML = "";
 document.getElementById("allBreakdowns").innerHTML = "";
 document.getElementById("allLoans").innerHTML = "";
+document.getElementById("creditCardList").innerHTML = "";
+document.getElementById("installmentList").innerHTML = "";
 
 let saved =
 localStorage.getItem(userStorageKey());
@@ -2931,9 +3761,16 @@ addLoanBox(loan);
 });
 }
 
+(data.creditCards || []).forEach(card => addCreditCard(card));
+(data.installments || []).forEach(item => addInstallment(item));
+refreshInstallmentCardOptions();
+refreshCreditCardStats();
+
 calculateTotals();
 calculateAllBreakdowns();
+renderBillsCalendar();
 isLoading = false;
+switchTrackerView(currentView);
 
 }
 
