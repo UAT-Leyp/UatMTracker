@@ -1487,6 +1487,7 @@ statementDate: card.querySelector(".cc-statement")?.value || "",
 dueDate: card.querySelector(".cc-due")?.value || "",
 minimumDue: card.querySelector(".cc-minimum")?.value || "",
 annualFeeDate: card.querySelector(".cc-annual")?.value || "",
+naffl: !!card.querySelector(".cc-naffl")?.checked,
 lastSyncedFromMonth: currentMonth
 };
 }
@@ -1681,7 +1682,14 @@ card.innerHTML = `
   <div class="finance-field"><label>MINIMUM AMOUNT DUE</label><input class="finance-input cc-minimum" type="number" min="0" step="0.01" placeholder="0" oninput="creditCardChanged(this.closest('.credit-card-item'));"></div>
   <div class="finance-field"><label>STATEMENT DATE / DAY</label><input class="finance-input cc-statement" placeholder="Example: 15 or 2026-09-15" oninput="creditCardChanged(this.closest('.credit-card-item'));"></div>
   <div class="finance-field"><label>PAYMENT DUE DATE / DAY</label><input class="finance-input cc-due" placeholder="Example: 5 or 2026-10-05" oninput="creditCardChanged(this.closest('.credit-card-item'));"></div>
-  <div class="finance-field" style="grid-column:1/-1"><label>ANNUAL FEE DATE</label><input class="finance-input cc-annual" type="date" oninput="creditCardChanged(this.closest('.credit-card-item'));" onchange="creditCardChanged(this.closest('.credit-card-item'));"></div>
+  <div class="finance-field" style="grid-column:1/-1">
+    <label>ANNUAL FEE DATE</label>
+    <input class="finance-input cc-annual" type="date" oninput="creditCardChanged(this.closest('.credit-card-item'));" onchange="creditCardChanged(this.closest('.credit-card-item'));">
+    <label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;font-weight:bold;color:#f3e8ff;cursor:pointer;">
+      <input class="cc-naffl" type="checkbox" style="width:20px;height:20px;accent-color:#a855f7;" onchange="creditCardChanged(this.closest('.credit-card-item'), true);">
+      <span>NAFFL — NO ANNUAL FEE FOR LIFE</span>
+    </label>
+  </div>
 </div>
 <div class="credit-card-stats">
   <div class="stat-tile"><small>AVAILABLE CREDIT</small><strong class="cc-available good">₱0.00</strong></div>
@@ -1706,6 +1714,7 @@ card.querySelector(".cc-statement").value = savedCard.statementDate || "";
 card.querySelector(".cc-due").value = savedCard.dueDate || "";
 card.querySelector(".cc-minimum").value = savedCard.minimumDue ?? "";
 card.querySelector(".cc-annual").value = savedCard.annualFeeDate || "";
+card.querySelector(".cc-naffl").checked = !!savedCard.naffl;
 }
 updateCreditCardCard(card);
 refreshInstallmentCardOptions();
@@ -1796,9 +1805,19 @@ timeZone:"UTC"
 function updateAnnualFeeCountdown(card){
 if(!card) return;
 const value = card.querySelector(".cc-annual")?.value || "";
+const naffl = !!card.querySelector(".cc-naffl")?.checked;
 const main = card.querySelector(".cc-annual-countdown");
 const detail = card.querySelector(".cc-annual-countdown-detail");
 if(!main || !detail) return;
+
+main.classList.remove("good","warn");
+
+if(naffl){
+main.innerText = "WAIVED";
+main.classList.add("good");
+detail.innerText = "NAFFL — No Annual Fee For Life";
+return;
+}
 
 const target = parseDateOnlyUTC(value);
 if(!target){
@@ -1810,7 +1829,6 @@ return;
 
 const today = todayUTCDateOnly();
 const deltaDays = Math.round((target - today) / 86400000);
-main.classList.remove("good","warn");
 
 if(deltaDays === 0){
 main.innerText = "Due today";
