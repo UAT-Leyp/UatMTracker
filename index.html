@@ -501,6 +501,16 @@ background:#1b1427;
 border:1px solid #4c3566;
 border-radius:10px;
 padding:8px;
+cursor:pointer;
+transition:border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.calendar-day:not(.empty):hover{
+border-color:#c084fc;
+background:#241834;
+}
+.calendar-day:not(.empty):focus{
+outline:2px solid #c084fc;
+outline-offset:2px;
 }
 .calendar-day.empty{
 background:transparent;
@@ -547,6 +557,52 @@ padding:14px;
 .calendar-undated h3{color:#e9d5ff;margin-bottom:8px;}
 .calendar-undated-item{padding:7px 0;border-bottom:1px solid #3d2d50;color:#ddd;}
 .calendar-undated-item:last-child{border-bottom:none;}
+.calendar-event-overlay{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.72);
+display:flex;
+align-items:center;
+justify-content:center;
+padding:18px;
+z-index:12000;
+}
+.calendar-event-modal{
+width:min(560px,100%);
+max-height:88vh;
+overflow:auto;
+background:#221b2f;
+border:2px solid #c084fc;
+border-radius:18px;
+padding:22px;
+box-shadow:0 20px 60px rgba(0,0,0,.45);
+}
+.calendar-event-modal h2{color:#f3e8ff;margin-bottom:6px;}
+.calendar-event-date{color:#c4b5fd;margin-bottom:18px;font-weight:bold;}
+.calendar-event-label{display:block;margin-bottom:8px;font-weight:bold;color:#e9d5ff;}
+.calendar-event-select{
+width:100%;
+padding:12px;
+border-radius:10px;
+border:1px solid #5b4277;
+background:#1b1427;
+color:white;
+font-size:16px;
+}
+.calendar-event-existing{
+margin-top:18px;
+padding-top:16px;
+border-top:1px solid #4c3566;
+}
+.calendar-event-existing-row{
+display:flex;
+justify-content:space-between;
+gap:10px;
+align-items:center;
+padding:9px 0;
+border-bottom:1px solid #3d2d50;
+}
+.calendar-event-note{font-size:12px;color:#c4b5fd;margin-top:10px;line-height:1.45;}
 .row-highlight{animation:rowGlow 1.8s ease;}
 @keyframes rowGlow{0%,100%{background:transparent;}50%{background:rgba(168,85,247,.28);}}
 
@@ -868,7 +924,8 @@ CLEAR ALL
   <div class="view-header">
     <div>
       <h2>💳 CREDIT CARD TRACKER</h2>
-      <div class="view-subtitle">Track several cards, limits, balances, due dates, minimum due, linked installments and annual fees.</div>
+      <div class="view-subtitle">Track several cards, limits, balances, due dates, minimum due, linked installments and annual fees. Edits in the current month automatically sync to every later month.</div>
+      <div id="creditCardSyncStatus" class="view-subtitle" style="margin-top:6px;color:#86efac;">↻ Auto-sync to future months is ON.</div>
     </div>
     <button class="add-btn" onclick="addCreditCard()">+ ADD CREDIT CARD</button>
   </div>
@@ -1417,8 +1474,9 @@ saveData();
 }
 
 
-function collectCreditCardsFromDOM(){
-return Array.from(document.querySelectorAll(".credit-card-item")).map(card => ({
+function creditCardRecordFromElement(card){
+if(!card) return null;
+return {
 id: card.dataset.cardId || makeId("card"),
 name: card.querySelector(".cc-name")?.value || "",
 bank: card.querySelector(".cc-bank")?.value || "",
@@ -1428,8 +1486,158 @@ outstanding: card.querySelector(".cc-outstanding")?.value || "",
 statementDate: card.querySelector(".cc-statement")?.value || "",
 dueDate: card.querySelector(".cc-due")?.value || "",
 minimumDue: card.querySelector(".cc-minimum")?.value || "",
-annualFeeDate: card.querySelector(".cc-annual")?.value || ""
-}));
+annualFeeDate: card.querySelector(".cc-annual")?.value || "",
+lastSyncedFromMonth: currentMonth
+};
+}
+
+function collectCreditCardsFromDOM(){
+return Array.from(document.querySelectorAll(".credit-card-item"))
+.map(creditCardRecordFromElement)
+.filter(Boolean);
+}
+
+const creditCardSyncTimers = new Map();
+let creditCardSyncQueue = Promise.resolve();
+
+function setCreditCardSyncStatus(message, type="ok"){
+const el = document.getElementById("creditCardSyncStatus");
+if(!el) return;
+el.innerText = message;
+el.style.color = type === "error" ? "#fca5a5" : type === "working" ? "#fde68a" : "#86efac";
+}
+
+function creditCardChanged(card, updateStats=false){
+if(!card) return;
+if(updateStats) updateCreditCardCard(card);
+else refreshCreditCardStats();
+saveData();
+scheduleCreditCardSync(card);
+}
+
+function scheduleCreditCardSync(card){
+if(isLoading || !currentUser || !card) return;
+const id = card.dataset.cardId;
+if(!id) return;
+const oldTimer = creditCardSyncTimers.get(id);
+if(oldTimer) clearTimeout(oldTimer);
+const sourceMonth = currentMonth;
+const record = creditCardRecordFromElement(card);
+if(!record) return;
+setCreditCardSyncStatus("↻ Saving card changes, then syncing future months…", "working");
+const timer = setTimeout(() => {
+creditCardSyncTimers.delete(id);
+creditCardSyncQueue = creditCardSyncQueue
+.then(() => syncCreditCardToFuture(record, true, sourceMonth))
+.catch(error => {
+console.log(error);
+setCreditCardSyncStatus("⚠ Credit card saved here, but future-month sync failed.", "error");
+});
+}, 1100);
+creditCardSyncTimers.set(id, timer);
+}
+
+function defaultMonthDataForSync(){
+return {
+title:"BILLS",
+salary:"",
+leftover:"",
+bills:[],
+breakdowns:[],
+loans:[],
+creditCards:[],
+installments:[]
+};
+}
+
+function normalizeMonthDataForSync(data){
+data = data && typeof data === "object" ? data : defaultMonthDataForSync();
+data.bills = Array.isArray(data.bills) ? data.bills : [];
+data.breakdowns = Array.isArray(data.breakdowns) ? data.breakdowns : [];
+data.loans = Array.isArray(data.loans) ? data.loans : [];
+data.creditCards = Array.isArray(data.creditCards) ? data.creditCards : [];
+data.installments = Array.isArray(data.installments) ? data.installments : [];
+return data;
+}
+
+async function syncCreditCardToFuture(record, silent=false, sourceMonth=currentMonth){
+if(!currentUser || !record?.id) return;
+const sourceIndex = monthToIndex(sourceMonth);
+const endIndex = monthToIndex("December-2035");
+if(sourceIndex < 0 || endIndex < 0 || sourceIndex >= endIndex){
+setCreditCardSyncStatus("✓ Card saved. No later month is available to sync.");
+return;
+}
+
+setCreditCardSyncStatus(`↻ Syncing ${record.name || record.bank || "credit card"} to future months…`, "working");
+try{
+const { data: rows, error } = await supabaseClient
+.from("money_data")
+.select("month,data")
+.eq("user_id", currentUser.id);
+if(error) throw error;
+
+const rowMap = new Map((rows || []).map(row => [
+row.month,
+typeof row.data === "string" ? JSON.parse(row.data) : (row.data || {})
+]));
+const upserts = [];
+for(let idx = sourceIndex + 1; idx <= endIndex; idx++){
+const month = indexToMonth(idx);
+if(!month) continue;
+const data = normalizeMonthDataForSync(rowMap.get(month));
+const existing = data.creditCards.find(card => card.id === record.id);
+const synced = {...record, lastSyncedFromMonth: sourceMonth};
+if(existing) Object.assign(existing, synced);
+else data.creditCards.push(synced);
+upserts.push({user_id:currentUser.id,month,data:JSON.stringify(data)});
+localStorage.setItem(`billTrackerData_${currentUsername}_${month}`, JSON.stringify(data));
+}
+if(upserts.length){
+const {error: saveError} = await supabaseClient.from("money_data").upsert(upserts,{onConflict:"user_id,month"});
+if(saveError) throw saveError;
+}
+setCreditCardSyncStatus(`✓ ${record.name || record.bank || "Credit card"} synced from ${sourceMonth} to all future months.`);
+}catch(error){
+console.log(error);
+setCreditCardSyncStatus("⚠ Credit card saved here, but future-month sync failed.", "error");
+if(!silent) alert("The credit card was saved in this month, but future months could not be synced.");
+}
+}
+
+async function removeCreditCardFromFuture(cardId, sourceMonth=currentMonth){
+if(!currentUser || !cardId) return true;
+const currentIndex = monthToIndex(sourceMonth);
+const endIndex = monthToIndex("December-2035");
+if(currentIndex < 0 || endIndex < 0) return false;
+setCreditCardSyncStatus("↻ Removing this card from future months…", "working");
+try{
+const {data: rows, error} = await supabaseClient.from("money_data").select("month,data").eq("user_id",currentUser.id);
+if(error) throw error;
+const upserts=[];
+(rows || []).forEach(row => {
+const idx=monthToIndex(row.month);
+if(idx <= currentIndex || idx > endIndex) return;
+const data=normalizeMonthDataForSync(typeof row.data === "string" ? JSON.parse(row.data) : (row.data || {}));
+const beforeCards=data.creditCards.length;
+let clearedLink=false;
+data.creditCards=data.creditCards.filter(card => card.id !== cardId);
+data.installments.forEach(inst => { if(inst.creditCardId === cardId){ inst.creditCardId=""; clearedLink=true; } });
+if(data.creditCards.length === beforeCards && !clearedLink) return;
+upserts.push({user_id:currentUser.id,month:row.month,data:JSON.stringify(data)});
+localStorage.setItem(`billTrackerData_${currentUsername}_${row.month}`, JSON.stringify(data));
+});
+if(upserts.length){
+const {error: saveError}=await supabaseClient.from("money_data").upsert(upserts,{onConflict:"user_id,month"});
+if(saveError) throw saveError;
+}
+setCreditCardSyncStatus("✓ Card removed from this month and all future months.");
+return true;
+}catch(error){
+console.log(error);
+setCreditCardSyncStatus("⚠ Card removed here, but some future months could not be updated.", "error");
+return false;
+}
 }
 
 function collectInstallmentsFromDOM(){
@@ -1465,22 +1673,28 @@ card.innerHTML = `
   <button class="delete-btn" onclick="deleteCreditCard(this)">DELETE CARD</button>
 </div>
 <div class="finance-grid">
-  <div class="finance-field"><label>CARD NAME</label><input class="finance-input cc-name" placeholder="Example: UB Rewards" oninput="updateCreditCardCard(this.closest('.credit-card-item')); saveData();"></div>
-  <div class="finance-field"><label>BANK</label><input class="finance-input cc-bank" placeholder="UnionBank / RCBC" oninput="updateCreditCardCard(this.closest('.credit-card-item')); saveData();"></div>
-  <div class="finance-field"><label>LAST 4 DIGITS</label><input class="finance-input cc-last4" maxlength="4" inputmode="numeric" placeholder="1234" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); saveData();"></div>
-  <div class="finance-field"><label>CREDIT LIMIT</label><input class="finance-input cc-limit" type="number" min="0" step="0.01" placeholder="0" oninput="updateCreditCardCard(this.closest('.credit-card-item')); saveData();"></div>
-  <div class="finance-field"><label>OUTSTANDING BALANCE</label><input class="finance-input cc-outstanding" type="number" min="0" step="0.01" placeholder="0" oninput="updateCreditCardCard(this.closest('.credit-card-item')); saveData();"></div>
-  <div class="finance-field"><label>MINIMUM AMOUNT DUE</label><input class="finance-input cc-minimum" type="number" min="0" step="0.01" placeholder="0" oninput="saveData();"></div>
-  <div class="finance-field"><label>STATEMENT DATE / DAY</label><input class="finance-input cc-statement" placeholder="Example: 15 or 2026-09-15" oninput="saveData();"></div>
-  <div class="finance-field"><label>PAYMENT DUE DATE / DAY</label><input class="finance-input cc-due" placeholder="Example: 5 or 2026-10-05" oninput="saveData();"></div>
-  <div class="finance-field" style="grid-column:1/-1"><label>ANNUAL FEE DATE</label><input class="finance-input cc-annual" placeholder="Example: 2027-03-01" oninput="saveData();"></div>
+  <div class="finance-field"><label>CARD NAME</label><input class="finance-input cc-name" placeholder="Example: UB Rewards" oninput="creditCardChanged(this.closest('.credit-card-item'), true);"></div>
+  <div class="finance-field"><label>BANK</label><input class="finance-input cc-bank" placeholder="UnionBank / RCBC" oninput="creditCardChanged(this.closest('.credit-card-item'), true);"></div>
+  <div class="finance-field"><label>LAST 4 DIGITS</label><input class="finance-input cc-last4" maxlength="4" inputmode="numeric" placeholder="1234" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,4); creditCardChanged(this.closest('.credit-card-item'));"></div>
+  <div class="finance-field"><label>CREDIT LIMIT</label><input class="finance-input cc-limit" type="number" min="0" step="0.01" placeholder="0" oninput="creditCardChanged(this.closest('.credit-card-item'), true);"></div>
+  <div class="finance-field"><label>OUTSTANDING BALANCE</label><input class="finance-input cc-outstanding" type="number" min="0" step="0.01" placeholder="0" oninput="creditCardChanged(this.closest('.credit-card-item'), true);"></div>
+  <div class="finance-field"><label>MINIMUM AMOUNT DUE</label><input class="finance-input cc-minimum" type="number" min="0" step="0.01" placeholder="0" oninput="creditCardChanged(this.closest('.credit-card-item'));"></div>
+  <div class="finance-field"><label>STATEMENT DATE / DAY</label><input class="finance-input cc-statement" placeholder="Example: 15 or 2026-09-15" oninput="creditCardChanged(this.closest('.credit-card-item'));"></div>
+  <div class="finance-field"><label>PAYMENT DUE DATE / DAY</label><input class="finance-input cc-due" placeholder="Example: 5 or 2026-10-05" oninput="creditCardChanged(this.closest('.credit-card-item'));"></div>
+  <div class="finance-field" style="grid-column:1/-1"><label>ANNUAL FEE DATE</label><input class="finance-input cc-annual" type="date" oninput="creditCardChanged(this.closest('.credit-card-item'));" onchange="creditCardChanged(this.closest('.credit-card-item'));"></div>
 </div>
 <div class="credit-card-stats">
   <div class="stat-tile"><small>AVAILABLE CREDIT</small><strong class="cc-available good">₱0.00</strong></div>
   <div class="stat-tile"><small>CREDIT USED</small><strong class="cc-utilization">0.0%</strong></div>
   <div class="stat-tile"><small>CURRENT INSTALLMENTS</small><strong class="cc-installment-count">0</strong></div>
   <div class="stat-tile"><small>REMAINING INSTALLMENT BALANCE</small><strong class="cc-installment-balance warn">₱0.00</strong></div>
-</div>`;
+  <div class="stat-tile" style="grid-column:1/-1;">
+    <small>ANNUAL FEE COUNTDOWN</small>
+    <strong class="cc-annual-countdown">Select an annual fee date</strong>
+    <div class="view-subtitle cc-annual-countdown-detail" style="margin-top:6px;">Choose the next annual fee date above.</div>
+  </div>
+</div>
+<div class="view-subtitle" style="margin-top:12px;color:#c4b5fd;">↻ Changes made in ${escapeHtml(currentMonth)} automatically carry forward to later months. Earlier months stay unchanged.</div>`;
 list.appendChild(card);
 if(savedCard){
 card.querySelector(".cc-name").value = savedCard.name || "";
@@ -1495,7 +1709,128 @@ card.querySelector(".cc-annual").value = savedCard.annualFeeDate || "";
 }
 updateCreditCardCard(card);
 refreshInstallmentCardOptions();
-if(!isLoading) saveData();
+if(!isLoading){
+saveData();
+scheduleCreditCardSync(card);
+}
+}
+
+function parseDateOnlyUTC(value){
+const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+if(!match) return null;
+const year = Number(match[1]);
+const month = Number(match[2]);
+const day = Number(match[3]);
+const date = new Date(Date.UTC(year, month - 1, day));
+if(
+date.getUTCFullYear() !== year ||
+date.getUTCMonth() !== month - 1 ||
+date.getUTCDate() !== day
+) return null;
+return date;
+}
+
+function todayUTCDateOnly(){
+const now = new Date();
+return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+}
+
+function addYearsClampedUTC(date, years){
+const y = date.getUTCFullYear() + years;
+const m = date.getUTCMonth();
+const d = date.getUTCDate();
+const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+return new Date(Date.UTC(y, m, Math.min(d, lastDay)));
+}
+
+function addMonthsClampedUTC(date, months){
+const startYear = date.getUTCFullYear();
+const startMonth = date.getUTCMonth();
+const absolute = startYear * 12 + startMonth + months;
+const y = Math.floor(absolute / 12);
+const m = ((absolute % 12) + 12) % 12;
+const d = date.getUTCDate();
+const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+return new Date(Date.UTC(y, m, Math.min(d, lastDay)));
+}
+
+function calendarDateDifference(start, end){
+if(!(start instanceof Date) || !(end instanceof Date) || end < start){
+return {years:0, months:0, days:0, totalDays:0};
+}
+let years = end.getUTCFullYear() - start.getUTCFullYear();
+let anchor = addYearsClampedUTC(start, years);
+if(anchor > end){
+years--;
+anchor = addYearsClampedUTC(start, years);
+}
+let months = (end.getUTCFullYear() - anchor.getUTCFullYear()) * 12 + (end.getUTCMonth() - anchor.getUTCMonth());
+let monthAnchor = addMonthsClampedUTC(anchor, months);
+if(monthAnchor > end){
+months--;
+monthAnchor = addMonthsClampedUTC(anchor, months);
+}
+const days = Math.round((end - monthAnchor) / 86400000);
+const totalDays = Math.round((end - start) / 86400000);
+return {years:Math.max(0,years), months:Math.max(0,months), days:Math.max(0,days), totalDays:Math.max(0,totalDays)};
+}
+
+function formatCalendarDuration(parts){
+const units = [];
+if(parts.years) units.push(`${parts.years} year${parts.years === 1 ? "" : "s"}`);
+if(parts.months) units.push(`${parts.months} month${parts.months === 1 ? "" : "s"}`);
+if(parts.days || units.length === 0) units.push(`${parts.days} day${parts.days === 1 ? "" : "s"}`);
+return units.join(", ");
+}
+
+function formatDateOnlyDisplay(date){
+if(!(date instanceof Date)) return "";
+return date.toLocaleDateString(undefined, {
+year:"numeric",
+month:"long",
+day:"numeric",
+timeZone:"UTC"
+});
+}
+
+function updateAnnualFeeCountdown(card){
+if(!card) return;
+const value = card.querySelector(".cc-annual")?.value || "";
+const main = card.querySelector(".cc-annual-countdown");
+const detail = card.querySelector(".cc-annual-countdown-detail");
+if(!main || !detail) return;
+
+const target = parseDateOnlyUTC(value);
+if(!target){
+main.innerText = "Select an annual fee date";
+main.classList.remove("good","warn");
+detail.innerText = "Choose the next annual fee date above.";
+return;
+}
+
+const today = todayUTCDateOnly();
+const deltaDays = Math.round((target - today) / 86400000);
+main.classList.remove("good","warn");
+
+if(deltaDays === 0){
+main.innerText = "Due today";
+main.classList.add("warn");
+detail.innerText = `Annual fee date: ${formatDateOnlyDisplay(target)}`;
+return;
+}
+
+if(deltaDays > 0){
+const diff = calendarDateDifference(today, target);
+main.innerText = `${formatCalendarDuration(diff)} left`;
+main.classList.add(deltaDays <= 30 ? "warn" : "good");
+detail.innerText = `${diff.totalDays.toLocaleString()} day${diff.totalDays === 1 ? "" : "s"} total • Annual fee date: ${formatDateOnlyDisplay(target)}`;
+return;
+}
+
+const overdue = calendarDateDifference(target, today);
+main.innerText = `${formatCalendarDuration(overdue)} past due`;
+main.classList.add("warn");
+detail.innerText = `${overdue.totalDays.toLocaleString()} day${overdue.totalDays === 1 ? "" : "s"} past the saved annual fee date • ${formatDateOnlyDisplay(target)}`;
 }
 
 function updateCreditCardCard(card){
@@ -1510,12 +1845,14 @@ card.querySelector(".cc-display-name").innerText = name;
 card.querySelector(".cc-display-bank").innerText = bank;
 card.querySelector(".cc-available").innerText = `₱${formatPeso(available)}`;
 card.querySelector(".cc-utilization").innerText = `${utilization.toFixed(1)}%`;
+updateAnnualFeeCountdown(card);
 refreshCreditCardStats();
 }
 
 function refreshCreditCardStats(){
 const installments = collectInstallmentsFromDOM();
 document.querySelectorAll(".credit-card-item").forEach(card => {
+updateAnnualFeeCountdown(card);
 const id = card.dataset.cardId;
 const linked = installments.filter(i => i.creditCardId === id && i.installmentNumber <= i.totalMonths);
 let remaining = 0;
@@ -1538,13 +1875,17 @@ async function deleteCreditCard(button){
 const card = button.closest(".credit-card-item");
 if(!card) return;
 const name = card.querySelector(".cc-name")?.value || "this credit card";
-if(!confirm(`Delete ${name}?\\n\\nActive loans linked to it will remain, but their card link will be cleared in this month.`)) return;
+if(!confirm(`Delete ${name}?\n\nThis removes the card from ${currentMonth} and all future months. Earlier months stay unchanged. Active loans remain, but future card links will be cleared.`)) return;
 const id = card.dataset.cardId;
+const sourceMonth = currentMonth;
+const timer = creditCardSyncTimers.get(id);
+if(timer){ clearTimeout(timer); creditCardSyncTimers.delete(id); }
 document.querySelectorAll(".inst-card-link").forEach(sel => { if(sel.value === id) sel.value = ""; });
 card.remove();
 refreshInstallmentCardOptions();
 refreshCreditCardStats();
 await saveData();
+await removeCreditCardFromFuture(id, sourceMonth);
 }
 
 function refreshInstallmentCardOptions(){
@@ -1851,10 +2192,110 @@ const d=dt.getDate(); if(!byDay.has(d)) byDay.set(d,[]); byDay.get(d).push(b);
 const cells=[];
 for(let i=0;i<firstDay;i++) cells.push('<div class="calendar-day empty"></div>');
 for(let d=1;d<=daysInMonth;d++){
-const items=(byDay.get(d)||[]).map(b=>`<button class="calendar-bill ${b.status==='Paid'?'paid':'unpaid'}" onclick="openBillFromCalendar(${b.index})" title="${escapeHtml(b.name)}">${escapeHtml(b.name)}${b.price?` • ₱${formatPeso(b.price)}`:''}</button>`).join('');
-cells.push(`<div class="calendar-day"><div class="calendar-day-number">${d}</div>${items}</div>`);
+const items=(byDay.get(d)||[]).map(b=>`<button class="calendar-bill ${b.status==='Paid'?'paid':'unpaid'}" onclick="event.stopPropagation();openBillFromCalendar(${b.index})" title="${escapeHtml(b.name)}">${escapeHtml(b.name)}${b.price?` • ₱${formatPeso(b.price)}`:''}</button>`).join('');
+cells.push(`<div class="calendar-day" role="button" tabindex="0" onclick="openCalendarDay(${d})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openCalendarDay(${d});}"><div class="calendar-day-number">${d}</div>${items}</div>`);
 }
-target.innerHTML=`<div class="calendar-shell"><div class="calendar-title">${escapeHtml(currentMonth)}</div><div class="calendar-legend"><span><i class="calendar-dot paid"></i>Paid</span><span><i class="calendar-dot unpaid"></i>Unpaid</span><span>Tip: Due Date can be YYYY-MM-DD or just a day number.</span></div><div class="calendar-grid">${['SUN','MON','TUE','WED','THU','FRI','SAT'].map(x=>`<div class="calendar-weekday">${x}</div>`).join('')}${cells.join('')}</div></div>` + (undated.length ? `<div class="calendar-undated"><h3>NO CALENDAR DATE / UNRECOGNIZED DATE</h3>${undated.map(b=>`<div class="calendar-undated-item">${escapeHtml(b.name)}${b.dueDate?` — ${escapeHtml(b.dueDate)}`:''}</div>`).join('')}</div>` : '');
+target.innerHTML=`<div class="calendar-shell"><div class="calendar-title">${escapeHtml(currentMonth)}</div><div class="calendar-legend"><span><i class="calendar-dot paid"></i>Paid</span><span><i class="calendar-dot unpaid"></i>Unpaid</span><span>Click any date to add a bill event.</span></div><div class="calendar-grid">${['SUN','MON','TUE','WED','THU','FRI','SAT'].map(x=>`<div class="calendar-weekday">${x}</div>`).join('')}${cells.join('')}</div></div>` + (undated.length ? `<div class="calendar-undated"><h3>NO CALENDAR DATE / UNRECOGNIZED DATE</h3>${undated.map(b=>`<div class="calendar-undated-item">${escapeHtml(b.name)}${b.dueDate?` — ${escapeHtml(b.dueDate)}`:''}</div>`).join('')}</div>` : '');
+}
+
+function getCalendarDateISO(day){
+const [monthName,yearText]=currentMonth.split("-");
+const months=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const monthNumber=months.indexOf(monthName)+1;
+if(monthNumber<1) return "";
+return `${yearText}-${String(monthNumber).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+}
+
+function formatCalendarModalDate(day){
+const [monthName,yearText]=currentMonth.split("-");
+return `${monthName} ${day}, ${yearText}`;
+}
+
+function closeCalendarEventModal(){
+const modal=document.getElementById("calendarEventOverlay");
+if(modal) modal.remove();
+}
+
+function openCalendarDay(day){
+closeCalendarEventModal();
+const rows=Array.from(document.querySelectorAll("#billTable tr"));
+const bills=rows.map((row,index)=>{
+const inputs=row.querySelectorAll("input");
+return {
+index,
+name:String(inputs[0]?.value||"").trim(),
+price:Number(inputs[1]?.value)||0,
+dueDate:String(inputs[2]?.value||"").trim(),
+status:row.querySelector("select")?.value||"Unpaid"
+};
+}).filter(b=>b.name);
+
+if(!bills.length){
+alert("Add and name at least one bill first, then select a calendar date.");
+return;
+}
+
+const dateISO=getCalendarDateISO(day);
+const existing=bills.filter(b=>{
+const dt=parseBillDueDate(b.dueDate);
+if(!dt) return false;
+const [y,m,d]=dateISO.split("-").map(Number);
+return dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d;
+});
+
+const overlay=document.createElement("div");
+overlay.id="calendarEventOverlay";
+overlay.className="calendar-event-overlay";
+overlay.onclick=(e)=>{if(e.target===overlay) closeCalendarEventModal();};
+
+overlay.innerHTML=`
+<div class="calendar-event-modal" role="dialog" aria-modal="true" aria-labelledby="calendarEventTitle">
+  <h2 id="calendarEventTitle">ADD EVENT</h2>
+  <div class="calendar-event-date">${escapeHtml(formatCalendarModalDate(day))}</div>
+  <label class="calendar-event-label" for="calendarEventBill">Which bill is this event for?</label>
+  <select id="calendarEventBill" class="calendar-event-select">
+    ${bills.map(b=>`<option value="${b.index}">${escapeHtml(b.name)}${b.price?` — ₱${formatPeso(b.price)}`:""}</option>`).join("")}
+  </select>
+  <div class="calendar-event-note">Adding the event sets the selected bill's Due Date to ${escapeHtml(dateISO)}. If that bill already has another due date, it will move to this date.</div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px;">
+    <button class="delete-btn" onclick="closeCalendarEventModal()">CANCEL</button>
+    <button class="add-btn" onclick="addCalendarBillEvent('${dateISO}')">+ ADD EVENT</button>
+  </div>
+  ${existing.length?`<div class="calendar-event-existing"><div class="calendar-event-label">Already on this date</div>${existing.map(b=>`<div class="calendar-event-existing-row"><span>${escapeHtml(b.name)}${b.price?` • ₱${formatPeso(b.price)}`:""}</span><button class="delete-btn" style="padding:7px 10px;" onclick="removeCalendarBillEvent(${b.index},${day})">REMOVE</button></div>`).join("")}</div>`:""}
+</div>`;
+
+document.body.appendChild(overlay);
+setTimeout(()=>document.getElementById("calendarEventBill")?.focus(),0);
+}
+
+async function addCalendarBillEvent(dateISO){
+const select=document.getElementById("calendarEventBill");
+if(!select) return;
+const index=Number(select.value);
+const row=document.querySelectorAll("#billTable tr")[index];
+if(!row) return;
+const inputs=row.querySelectorAll("input");
+const previous=String(inputs[2]?.value||"").trim();
+if(previous && previous!==dateISO){
+const billName=String(inputs[0]?.value||"this bill").trim()||"this bill";
+if(!confirm(`${billName} is currently scheduled for ${previous}. Move it to ${dateISO}?`)) return;
+}
+inputs[2].value=dateISO;
+await saveData();
+renderBillsCalendar();
+closeCalendarEventModal();
+}
+
+async function removeCalendarBillEvent(index,day){
+const row=document.querySelectorAll("#billTable tr")[index];
+if(!row) return;
+const inputs=row.querySelectorAll("input");
+const billName=String(inputs[0]?.value||"this bill").trim()||"this bill";
+if(!confirm(`Remove ${billName} from ${formatCalendarModalDate(day)}?`)) return;
+inputs[2].value="";
+await saveData();
+renderBillsCalendar();
+closeCalendarEventModal();
 }
 
 function openBillFromCalendar(index){
