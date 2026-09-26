@@ -366,8 +366,9 @@ background:#1b1427;
 
 .credit-card-grid{
 display:grid;
-grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
-gap:16px;
+grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
+gap:18px;
+align-items:start;
 }
 .credit-card-item{
 background:#2b213d;
@@ -375,17 +376,67 @@ border:1px solid #7e5aa6;
 border-radius:18px;
 padding:18px;
 box-shadow:0 10px 24px rgba(0,0,0,.18);
+display:flex;
+flex-direction:column;
+gap:14px;
+min-width:0;
+overflow:hidden;
 }
 .credit-card-heading{
 display:flex;
-justify-content:space-between;
+flex-direction:column;
 gap:12px;
-align-items:flex-start;
-margin-bottom:12px;
+margin-bottom:0;
+min-width:0;
 }
 .credit-card-heading h3{
-font-size:22px;
+font-size:18px;
+line-height:1.2;
 color:#f3e8ff;
+word-break:break-word;
+overflow-wrap:anywhere;
+}
+.credit-card-title-wrap{
+min-width:0;
+}
+.credit-card-title-wrap .view-subtitle{
+word-break:break-word;
+overflow-wrap:anywhere;
+}
+.credit-card-actions{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:10px;
+width:100%;
+}
+.credit-card-action-btn{
+width:100%;
+padding:12px 14px;
+border-radius:14px;
+font-size:15px;
+line-height:1.1;
+min-height:52px;
+display:flex;
+align-items:center;
+justify-content:center;
+text-align:center;
+font-weight:bold;
+}
+.credit-card-action-btn.secondary{
+background:#241734;
+border:1px solid #4c3566;
+color:#f3e8ff;
+}
+.credit-card-action-btn.secondary:hover{
+background:#2d1d40;
+}
+.credit-card-item .finance-grid,
+.credit-card-item .credit-card-stats{
+min-width:0;
+}
+.credit-card-item .finance-field,
+.credit-card-item .stat-tile{
+min-width:0;
 }
 .finance-grid{
 display:grid;
@@ -607,7 +658,8 @@ border-bottom:1px solid #3d2d50;
 @keyframes rowGlow{0%,100%{background:transparent;}50%{background:rgba(168,85,247,.28);}}
 
 @media(max-width:800px){
-.finance-grid,.credit-card-stats{grid-template-columns:1fr;}
+.finance-grid,.credit-card-stats,.credit-card-actions{grid-template-columns:1fr;}
+.credit-card-action-btn{min-height:46px;font-size:14px;}
 .installment-summary{grid-template-columns:repeat(2,minmax(0,1fr));}
 .calendar-grid{gap:4px;}
 .calendar-day{min-height:88px;padding:5px;}
@@ -1670,10 +1722,10 @@ card.className = "credit-card-item";
 card.dataset.cardId = savedCard?.id || makeId("card");
 card.innerHTML = `
 <div class="credit-card-heading">
-  <div><h3>💳 <span class="cc-display-name">New Credit Card</span></h3><div class="view-subtitle cc-display-bank">Add card details below.</div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-    <button class="add-btn" onclick="lessCreditCardOutstanding(this)" title="Subtract a payment or credit from this month's outstanding balance">− LESS OUTSTANDING</button>
-    <button class="delete-btn" onclick="deleteCreditCard(this)">DELETE CARD</button>
+  <div class="credit-card-title-wrap"><h3>💳 <span class="cc-display-name">New Credit Card</span></h3><div class="view-subtitle cc-display-bank">Add card details below.</div></div>
+  <div class="credit-card-actions">
+    <button class="add-btn credit-card-action-btn secondary" onclick="lessCreditCardOutstanding(this)" title="Subtract a payment or credit from this month's outstanding balance">− LESS OUTSTANDING</button>
+    <button class="delete-btn credit-card-action-btn" onclick="deleteCreditCard(this)">DELETE CARD</button>
   </div>
 </div>
 <div class="finance-grid">
